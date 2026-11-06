@@ -1,0 +1,115 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cyku.tw – Linux</title><link>https://cyku.tw/tags/linux/</link><description>Recent content in Linux on cyku.tw</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Fri, 17 Mar 2017 17:27:32 +0800</lastBuildDate><atom:link href="https://cyku.tw/tags/linux/index.xml" rel="self" type="application/rss+xml"/><item><title>Apricity OS: 安裝中文輸入法 fcitx-chewing</title><link>https://cyku.tw/blog/apricity-os-fcitx-chewing/</link><pubDate>Fri, 17 Mar 2017 17:27:32 +0800</pubDate><guid>https://cyku.tw/blog/apricity-os-fcitx-chewing/</guid><description>
+&lt;p&gt;Apricity OS 秉持 Simple 的原則，系統安裝完預設是不會有其他額外輸入法存在，因此必須了解如何自行安裝中文輸入法。介紹如何在 Apricity OS 中安裝 Linux 常見的 fcitx 輸入法框架、經典的新酷音注音輸入法以及可能碰上的問題。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/fcitx-1.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h3&gt;安裝 fcitx&lt;span class="hx:absolute hx:-mt-20" id="安裝-fcitx"&gt;&lt;/span&gt;
+&lt;a href="#%e5%ae%89%e8%a3%9d-fcitx" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;fcitx 綽號為「小企鵝輸入法」，相較於另一款常見 Linux 下的 ibus 輸入法引擎，我個人比較習慣使用 fcitx。新酷音輸入法 (chewing) 是 Linux 下知名的中文注音輸入法，不同的是，chewing 需要仰賴 fcitx、ibus 等輸入法軟體才能使用。&lt;/p&gt;
+&lt;p&gt;需要安裝的項目有三項：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;fcitx-im&lt;/strong&gt; : 此為 fcitx 的本體，fcitx-im 會安裝所有需要使用到的附加套件，包含 fcitx、 fcitx-gtk2、fcitx-gtk3 等。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fcitx-configtool&lt;/strong&gt; : 這是 fcitx 的設定工具套件，要安裝此套件才能啟動 Fcitx 圖型化介面設定工具。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fcitx-chewing&lt;/strong&gt; : 最重要的部分，安裝這個套件後，fcitx 才能支援新酷音注音輸入法。&lt;br&gt;
+安裝步驟很簡單，直接使用 yaourt 的套件管理工具，依序執行以下指令安裝即可：&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;yaourt -Sy fcitx-im&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;yaourt -S fcitx-configtool&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;yaourt -S fcitx-chewing&lt;/strong&gt;&lt;br&gt;
+完成後到所有程式裡面尋找，會看到兩個 fcitx，圖中綠色框那個是啟動 fcitx，紅色框則是圖型化介面設定工具，如果沒有安裝 fcitx-configtool，執行紅色框的程式不會有任何反應。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/fcitx-2.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;第一次安裝完成要手動執行，之後重新開機應該都會自動啟動 fcitx。&lt;/p&gt;
+&lt;h3&gt;第一次安裝就失手&lt;span class="hx:absolute hx:-mt-20" id="第一次安裝就失手"&gt;&lt;/span&gt;
+&lt;a href="#%e7%ac%ac%e4%b8%80%e6%ac%a1%e5%ae%89%e8%a3%9d%e5%b0%b1%e5%a4%b1%e6%89%8b" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;接著是最惱人的部分，大部分教學都會告訴大家要新增一個 ~/.xprofile 檔案，並設定三個環境變數 GTK_IM_MODULE、QT_IM_MODULE、XMODIFIERS 以確保可以啟用 fcitx，但我第一次嘗試卻不斷失敗，也試過其他可能的檔案，例如 ~/.xinitrc，仍然以失敗收場，後來仔細查閱文件說明，發現可以使用 fcitx-diagnose 指令來診斷問題所在。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/fcitx-3.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;經過診斷發現，明明已於 ~/.xprofile 檔案中設定的環境變數卻顯示沒有設定，推測 ~/.xprofile 不知道是因為什麼原因而沒有在登入系統時被載入 (原諒小弟我查不出原因，懇求知情的大大能提供資訊 o(_ _)o )。&lt;/p&gt;
+&lt;p&gt;為了解決此問題，可以在 /etc/profile 檔案中最後方添加如下的環境變數設定，根據爬得的資料表示 /etc/profile 是系統下全體使用者都會影響到的，不過這系統只是在我個人電腦上使用，所以就沒關係了。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;export GTK_IM_MODULE&lt;span style="color:#f92672"&gt;=&lt;/span&gt;fcitx
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;export QT_IM_MODULE&lt;span style="color:#f92672"&gt;=&lt;/span&gt;fcitx
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;export XMODIFIERS&lt;span style="color:#f92672"&gt;=&lt;/span&gt;&lt;span style="color:#e6db74"&gt;&amp;#34;@im=fcitx&amp;#34;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/fcitx-4.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;若朋友們有發現其他問題，可以在文章底下留言分享，或是參考 Arch Linux 的官方文件。&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://wiki.archlinux.org/index.php/Fcitx_%28%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%29"target="_blank" rel="noopener"&gt;Arch Wiki - Fcitx (简体中文)&lt;/a&gt;&lt;/p&gt;</description></item><item><title>Apricity OS: 什麼？你也想安裝 Apricity？</title><link>https://cyku.tw/blog/apricity-os-install/</link><pubDate>Sat, 04 Mar 2017 00:22:44 +0800</pubDate><guid>https://cyku.tw/blog/apricity-os-install/</guid><description>
+&lt;p&gt;常有人看到我的筆電作業系統有點潮，就來詢問是什麼系統，因此就來寫一篇介紹 Apricity OS 的文章，這樣下次有人詢問就能直接貼文章給他XD&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-1.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h3&gt;關於 Apricity OS&lt;span class="hx:absolute hx:-mt-20" id="關於-apricity-os"&gt;&lt;/span&gt;
+&lt;a href="#%e9%97%9c%e6%96%bc-apricity-os" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;Apricity OS 是一款基於 Arch Linux 的作業系統，意即 Apricity 為 Arch Linux 的衍生物，而 Arch Linux 則是常聽見的著名開源作業系統 Linux 的眾多發行版之一。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-2.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://apricityos.com/"target="_blank" rel="noopener"&gt;Apricity OS 官網&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;知識補充：&lt;a href="https://zh.wikipedia.org/wiki/Arch_Linux"target="_blank" rel="noopener"&gt;維基百科 - Arch Linux&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;知識補充：&lt;a href="https://zh.wikipedia.org/wiki/Linux"target="_blank" rel="noopener"&gt;維基百科 - Linux&lt;/a&gt;&lt;br&gt;
+Apricity 在官網的標語為&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;h5&gt;Simple, Beautiful, Linux.&lt;span class="hx:absolute hx:-mt-20" id="simple-beautiful-linux"&gt;&lt;/span&gt;
+&lt;a href="#simple-beautiful-linux" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h5&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;可以看出 Apricity 的目標是造出一款輕量、優美的 Linux 作業系統，個人經過一段試用時間後，認為確實符合這個標語，整體介面非常簡單、易懂又清爽，甚至覺得推薦給一般大眾都沒問題了。&lt;/p&gt;
+&lt;h3&gt;如何安裝 Apricity OS&lt;span class="hx:absolute hx:-mt-20" id="如何安裝-apricity-os"&gt;&lt;/span&gt;
+&lt;a href="#%e5%a6%82%e4%bd%95%e5%ae%89%e8%a3%9d-apricity-os" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;h4&gt;Step 1. 製作 Linux Live USB 隨身碟 (在 Windows 底下製作)&lt;span class="hx:absolute hx:-mt-20" id="step-1-製作-linux-live-usb-隨身碟-在-windows-底下製作"&gt;&lt;/span&gt;
+&lt;a href="#step-1-%e8%a3%bd%e4%bd%9c-linux-live-usb-%e9%9a%a8%e8%ba%ab%e7%a2%9f-%e5%9c%a8-windows-%e5%ba%95%e4%b8%8b%e8%a3%bd%e4%bd%9c" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;何謂「Linux Live USB 隨身碟」？就是將 Linux 的作業系統寫進 USB 隨身碟中，直接透過 USB 隨身碟開機，不必安裝至硬碟就可以直接使用系統。因此我們必須先製作 Apricity OS 的 Live 隨身碟，之後啟動它，系統中會有 Apricity OS 的安裝指引，才能順利將 Apricity OS 安裝至主機的硬碟之中。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-3.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;首先下載製作的工具 USB Writer → &lt;a href="https://sourceforge.net/projects/usbwriter/"target="_blank" rel="noopener"&gt;SourceForge下載&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;接著下載 Apricity OS 的 ISO 映像檔 → &lt;a href="https://apricityos.com/download"target="_blank" rel="noopener"&gt;Apricity OS 官網&lt;/a&gt;下載時請選擇 Stable Downloads，下方的 Development 是給開發者使用的，你可以選擇 Gnome 或 Cinnamon 的版本，兩者在畫面的呈現有些不同，看各人喜好選擇即可，我是選擇 Gnome。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Gnome 畫面展示 &lt;a href="https://www.youtube.com/watch?v=e0Abu5aNGls"target="_blank" rel="noopener"&gt;Youtube&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Cinnamon 畫面展示 &lt;a href="https://www.youtube.com/watch?v=zin_ceyg_io"target="_blank" rel="noopener"&gt;Youtube&lt;/a&gt;&lt;br&gt;
+接著必須準備一個乾淨的 USB 隨身碟，將其格式化成 FAT32。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-4.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;再來執行 USB Writer，選擇 Apricity OS 映像檔及要寫入的 USB 裝置中，按下 Write 讓它慢慢寫入。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-5.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;寫入完成後就可以透過這個 USB 隨身碟啟動 Apricity OS 了。&lt;/p&gt;
+&lt;h4&gt;補充說明&lt;span class="hx:absolute hx:-mt-20" id="補充說明"&gt;&lt;/span&gt;
+&lt;a href="#%e8%a3%9c%e5%85%85%e8%aa%aa%e6%98%8e" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;因為 USB Writer 直接寫入 USB 裝置的關係，會導致隨身碟無法再正常使用，透過 Windows 的磁碟管理可以了解情況。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-6.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-7.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;可以發現下方有一個空間大小與隨身碟相同的磁碟，聰明的朋友們應該注意到，就是因為其 USB Writer 已將完整的 OS 寫入的影響，導致磁碟空間呈現出未配置的情況，所以只要把所有空間刪除、重新配置就可以還原成正常的 USB 隨身碟囉。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-8.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;朋友們可以到 Google 搜尋「USB 空間消失」，利用 Windows 提供的 Diskpart 來還原它。&lt;/p&gt;
+&lt;h4&gt;Step 2. 透過 USB 隨身碟啟動 Apricity OS&lt;span class="hx:absolute hx:-mt-20" id="step-2-透過-usb-隨身碟啟動-apricity-os"&gt;&lt;/span&gt;
+&lt;a href="#step-2-%e9%80%8f%e9%81%8e-usb-%e9%9a%a8%e8%ba%ab%e7%a2%9f%e5%95%9f%e5%8b%95-apricity-os" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;現在電腦大部分都提供開機選單的選項，可以直接選擇要從哪個硬體裝置開機，像我的 Gigabyte 筆電就提供 F12 的 Boot Menu。若沒有 Boot Menu 的功能，就必須進到 bios 尋找開機選項、設定為 USB 優先，這部分因為不同的 BIOS 其設定方式也不盡相同，在此恕我沒辦法詳細說明。&lt;/p&gt;
+&lt;p&gt;F12 Boot Menu 示意圖 (來源&lt;a href="https://zhidao.baidu.com/question/1767304423393167820.html"target="_blank" rel="noopener"&gt;百度知道&lt;/a&gt;)：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://gss0.baidu.com/-vo3dSag_xI4khGko9WTAnF6hhy/zhidao/pic/item/b2de9c82d158ccbff9f390231dd8bc3eb135415f.jpg" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;順利從 USB 開機後會優先看到這畫面，選擇第一個 Boot Apricity OS (x86_64) 就可以啟動。連這個部分都製作得如此精美，不愧對其 Beautiful 的標語！&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-10.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;過程中還能看到一連串載入、測試的訊息，有些人覺得等待很厭煩，但我蠻喜歡看這種畫面的XD&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-11.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h4&gt;Step 3. 安裝 Apricity OS&lt;span class="hx:absolute hx:-mt-20" id="step-3-安裝-apricity-os"&gt;&lt;/span&gt;
+&lt;a href="#step-3-%e5%ae%89%e8%a3%9d-apricity-os" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;系統順利啟動後，應該會直接跳出安裝指引的程式。若沒有，可以按鍵盤的 windows 鍵，選擇所有程式，尋找 Install Apricity 的程式。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-12.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-13.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;語言選擇 Chinese (Taiwan)、地區與時區選擇 Asia / Taipei、鍵盤直接 Default 即可，這邊基本上應該都沒有問題，比較有問題的是選擇安裝的磁碟。如果你是使用整顆硬碟，直接安裝即可，但若是使用分割區，就比較麻煩了。&lt;/p&gt;
+&lt;p&gt;若是使用分割區，必須先以其他磁碟分割工具，例如 Linux 下的 GParted 或 Windows 內建的磁碟管理工具，將欲安裝系統的分割區切割出來成為未配置空間。&lt;/p&gt;
+&lt;p&gt;假如忘記切怎麼辦呢？別怕！還記得 Live 作業系統嗎？我們也可以直接在 Live 系統裡安裝 GParted 來切割，開啟終端機輸入「yaourt -Sy gparted」進行安裝，安裝完成後至所有程式尋找 GParted 執行。&lt;/p&gt;
+&lt;p&gt;將分割區切割出來並且確定顯示為「未配置 ( unallocated )」，這樣就能順利把系統安裝在新的分割區之中。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-14.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;回到安裝的部份，如果是整顆硬碟選擇「抹除磁碟」就可以繼續下一步，但若是「手動分割」就要設定分割區了。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-15.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;其實手動也很簡單，一般使用者沒有特殊需求只要選擇未配置空間直接新增。若你是要使用雙系統，請確定最下方的「安裝開機載入器在」的選項必須是舊系統的磁碟，Apricity 才能正確捕捉到舊系統並保留它。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-16.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;毫不猶豫地按下 OK 就可以繼續下一步了！因為只要設定類型為「主要分割區」、掛載點為「/」，剩下的部份 Apricity 安裝時會幫我們自動處理。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-17.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;接著填入使用者名稱、電腦名稱、密碼，最好不要勾選「不詢問密碼自動登入」。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-18.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最後會再跟你確認一次所有安裝的細節，確定無誤後就按下一步等它安裝完成即可。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-19.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-20.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;看到這畫面就可以重新啟動，盡情享用這潮到出水的系統了 (´&amp;gt; ω &amp;lt; `)&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/03/apricity-21.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;</description></item></channel></rss>

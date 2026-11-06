@@ -1,0 +1,201 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cyku.tw – CVE</title><link>https://cyku.tw/tags/cve/</link><description>Recent content in CVE on cyku.tw</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Mon, 10 Feb 2020 22:42:27 +0800</lastBuildDate><atom:link href="https://cyku.tw/tags/cve/index.xml" rel="self" type="application/rss+xml"/><item><title>簡單聊聊在 OpenEMR 5.0.1 &lt;Patch 5 中發現的 CVE-2018-17179、CVE-2018-17180 及 CVE-2018-17181</title><link>https://cyku.tw/blog/openemr-5-0-1-before-patch-5-cve/</link><pubDate>Mon, 10 Feb 2020 22:42:27 +0800</pubDate><guid>https://cyku.tw/blog/openemr-5-0-1-before-patch-5-cve/</guid><description>
+&lt;p&gt;最近武漢肺炎疫情不停延燒、愈發嚴重，每個人都只能盡力做好自主管理、照顧好身子，也得盡量別在這期間感冒而造成額外擔憂，台灣目前仍能防治住疫情也得特別感謝政府、第一線醫護人員、防疫人員、第三方人員等等許多人的努力！&lt;/p&gt;
+&lt;p&gt;筆者我身為技術宅，不是醫護人員，只能作為普通民眾盡可能地遵從一些政策、規定以降低醫療人員的負擔，但即使如此也還是希望能替醫療界盡一份心力，所以只好發揮所長試著在醫療界不為人知、沒有直接關聯的角落作出貢獻，因此今天就來聊聊很久之前曾在開源醫療管理系統 OpenEMR 所發現的 3 個 Pre-Auth 弱點。&lt;/p&gt;
+&lt;p&gt;過去資策會資安科技研究所曾經發表過一篇文章 &lt;a href="https://csticsfrontline.wordpress.com/2018/05/24/openemr-%E5%BC%B1%E9%BB%9E%E5%88%86%E6%9E%90/"target="_blank" rel="noopener"&gt;OpenEMR 弱點分析&lt;/a&gt;，分析關於他們在 OpenEMR 發現的 RCE 弱點，RCE 可以讓攻擊者直接控制整台主機，是非常嚴重的風險，值得慶幸的是弱點必須要先登入擁有權限的帳號才可觸發。但倘若攻擊者發現可以在不知道帳號密碼的前提下從匿名使用者（未登入狀態）提升權限（登入）的弱點，就能進一步擴大風險！因此我決定挖掘 Pre-Auth 的弱點並將之回報給開發者作修復以預防此類風險發生，最終發現 2 個 Pre-Auth SQL Injection 和 1 個 Pre-Auth Arbitrary File Read 弱點，其對應 CVE 編號分別為 &lt;strong&gt;CVE-2018-17179&lt;/strong&gt;、 &lt;strong&gt;CVE-2018-17181&lt;/strong&gt; 和 &lt;strong&gt;CVE-2018-17180&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;這邊也感謝開發者 &lt;a href="https://github.com/bradymiller"target="_blank" rel="noopener"&gt;Brady Miller&lt;/a&gt; 回應及修復真的非常地迅速。&lt;br&gt;
+Thanks to the developer &lt;a href="https://github.com/bradymiller"target="_blank" rel="noopener"&gt;Brady Miller&lt;/a&gt; for very quick respond and fix.&lt;/p&gt;
+&lt;h2&gt;CVE-2018-17179 : SQL Injection&lt;span class="hx:absolute hx:-mt-20" id="cve-2018-17179--sql-injection"&gt;&lt;/span&gt;
+&lt;a href="#cve-2018-17179--sql-injection" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;此弱點已在 &lt;a href="https://github.com/openemr/openemr/commit/3e22d11"target="_blank" rel="noopener"&gt;commit 3e22d11&lt;/a&gt; 中獲得了修復。&lt;/p&gt;
+&lt;p&gt;此弱點的進入點是 taskman.php 這個檔案，這個路徑不需要登入、任何人均可存取。當請求動作是 make_task 時會轉交給 make_task 函式作處裡。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /interface/forms/eye_mag/taskman.php
+100: $ajax_req = $_REQUEST;
+101:
+102: if ($_REQUEST[&amp;#39;action&amp;#39;]==&amp;#39;make_task&amp;#39;) {
+103: make_task($ajax_req);
+104: }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;而 make_task 函式中，進行 SELECT 查詢時都有過濾，唯獨在 INSERT 時遺漏了，因此這邊很單純就能直接進行注入，恰好此處會顯示 SQL 錯誤訊息，於是可以利用 Error-Based 獲取資料庫內容，包括取得使用者帳號密碼以登入系統進行更多操作。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /interface/forms/eye_mag/php/taskman_functions.php
+35: function make_task($ajax_req)
+36: {
+37: global $send;
+38: $from_id = $ajax_req[&amp;#39;from_id&amp;#39;];
+39: $to_id = $ajax_req[&amp;#39;to_id&amp;#39;];
+40: $patient_id = $ajax_req[&amp;#39;pid&amp;#39;];
+41: $doc_type = $ajax_req[&amp;#39;doc_type&amp;#39;];
+42: $doc_id = $ajax_req[&amp;#39;doc_id&amp;#39;];
+43: $enc = $ajax_req[&amp;#39;enc&amp;#39;];
+93: } else if (!$task[&amp;#39;ID&amp;#39;]) {
+94: $sql = &amp;#34;INSERT into form_taskman
+95: (REQ_DATE, FROM_ID, TO_ID, PATIENT_ID, DOC_TYPE, DOC_ID, ENC_ID) VALUES
+96: (NOW(), &amp;#39;$from_id&amp;#39;, &amp;#39;$to_id&amp;#39;,&amp;#39;$patient_id&amp;#39;,&amp;#39;$doc_type&amp;#39;,&amp;#39;$doc_id&amp;#39;,&amp;#39;$enc&amp;#39;)&amp;#34;;
+97: sqlQuery($sql);&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;h2&gt;CVE-2018-17180 : Arbitrary File Read&lt;span class="hx:absolute hx:-mt-20" id="cve-2018-17180--arbitrary-file-read"&gt;&lt;/span&gt;
+&lt;a href="#cve-2018-17180--arbitrary-file-read" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;此弱點在 &lt;a href="https://github.com/openemr/openemr/commit/4963fe4"target="_blank" rel="noopener"&gt;commit 4963fe4&lt;/a&gt; 中獲得了修復。&lt;/p&gt;
+&lt;p&gt;進入點 download_template.php 接收一個參數 docid，此參數隨後會代入路徑，並利用 file_get_contents 函式讀取檔案內容後作輸出。此檔案除了要求必須啟用「Patient Portal」的功能才可存取以外，在檔案開頭還引入了 verify_session.php，從檔案名稱來看似乎有進行一些驗證的感覺。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /portal/lib/download_template.php
+27: require_once(dirname(__file__) . &amp;#34;/../verify_session.php&amp;#34;);
+36: $form_filename = $_POST[&amp;#39;docid&amp;#39;];
+371: $templatepath = &amp;#34;$templatedir/$form_filename&amp;#34;;
+440: // Not a zip archive.
+441: $edata = file_get_contents($templatepath);
+442: $edata = doSubs($edata);
+443: if ($html_flag) { // return raw html template
+444: $html = $edata;
+445: } else { // add br for lf in text template
+446: $html = nl2br($edata);
+447: }
+448: }
+449:
+450: echo $html;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;因此讓我們追進 verify_session.php 看看，在這邊驗證了變數 &lt;code&gt;$_SESSION['pid']&lt;/code&gt; 和 &lt;code&gt;$_SESSION['patient_portal_onsite_two']&lt;/code&gt; 是否存在，若變數不存在則會強制跳轉到登入頁面。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /portal/verify_session.php
+41: // kick out if patient not authenticated
+42: if (isset($_SESSION[&amp;#39;pid&amp;#39;]) &amp;amp;&amp;amp; isset($_SESSION[&amp;#39;patient_portal_onsite_two&amp;#39;])) {
+43: $pid = $_SESSION[&amp;#39;pid&amp;#39;];
+44: } else {
+45: session_destroy();
+46: header(&amp;#39;Location: &amp;#39;.$landingpage.&amp;#39;&amp;amp;w&amp;#39;);
+47: exit;
+48: }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;本來預想是不可能繞過此限制，但在閱覽其他檔案的程式碼後意外發現當 index.php 收到特定請求時，會將 &lt;code&gt;$_SESSION['pid']&lt;/code&gt; 和 &lt;code&gt;$_SESSION['patient_portal_onsite_two']&lt;/code&gt; 同時設定為 true，因此就能繞過原 verify_session.php 中的限制，達成 Pre-Auth Arbitrary File Read。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /portal/index.php
+351: if (isset($_GET[&amp;#39;requestNew&amp;#39;])) {
+352: $_SESSION[&amp;#39;patient_portal_onsite_two&amp;#39;] = true;
+353: $_SESSION[&amp;#39;authUser&amp;#39;] = &amp;#39;portal-user&amp;#39;;
+354: $_SESSION[&amp;#39;pid&amp;#39;] = true;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;因為這個意外的發現，所以有些透過 verify_session.php 保護的檔案也成為了需要檢查的目標之一，而隨後也確實在「Patient Portal」系列功能中發現了另一個 Pre-Auth SQL Injection。&lt;/p&gt;
+&lt;h2&gt;CVE-2018-17181 : SQL Injectiion&lt;span class="hx:absolute hx:-mt-20" id="cve-2018-17181--sql-injectiion"&gt;&lt;/span&gt;
+&lt;a href="#cve-2018-17181--sql-injectiion" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;此弱點在同樣 &lt;a href="https://github.com/openemr/openemr/commit/4963fe4"target="_blank" rel="noopener"&gt;commit 4963fe4&lt;/a&gt; 中獲得了修復。&lt;/p&gt;
+&lt;p&gt;這個弱點的進入點檔案是 paylib.php，收到 mode 為 portal-save 的請求後會轉交給 SaveAudit 函式進行處理，而該函式又會呼叫到 ApplicationTable 物件的 portalAudit 函式。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /portal/lib/paylib.php
+47: if ($_POST[&amp;#39;mode&amp;#39;] == &amp;#39;portal-save&amp;#39;) {
+48: $form_pid = $_POST[&amp;#39;form_pid&amp;#39;];
+49: $form_method = trim($_POST[&amp;#39;form_method&amp;#39;]);
+50: $form_source = trim($_POST[&amp;#39;form_source&amp;#39;]);
+51: $upay = isset($_POST[&amp;#39;form_upay&amp;#39;]) ? $_POST[&amp;#39;form_upay&amp;#39;] : &amp;#39;&amp;#39;;
+52: $cc = isset($_POST[&amp;#39;extra_values&amp;#39;]) ? $_POST[&amp;#39;extra_values&amp;#39;] : &amp;#39;&amp;#39;;
+53: $amts = isset($_POST[&amp;#39;inv_values&amp;#39;]) ? $_POST[&amp;#39;inv_values&amp;#39;] : &amp;#39;&amp;#39;;
+54: $s = SaveAudit($form_pid, $amts, $cc);
+75: function SaveAudit($pid, $amts, $cc)
+76: {
+77: $appsql = new ApplicationTable();
+78: try {
+79: $audit = array ();
+80: $audit[&amp;#39;patient_id&amp;#39;] = $pid;
+93: $edata = $appsql-&amp;gt;getPortalAudit($pid, &amp;#39;review&amp;#39;, &amp;#39;payment&amp;#39;);
+94: $audit[&amp;#39;date&amp;#39;] = $edata[&amp;#39;date&amp;#39;];
+95: if ($edata[&amp;#39;id&amp;#39;] &amp;gt; 0) {
+96: $appsql-&amp;gt;portalAudit(&amp;#39;update&amp;#39;, $edata[&amp;#39;id&amp;#39;], $audit);
+97: } else {
+98: $appsql-&amp;gt;portalAudit(&amp;#39;insert&amp;#39;, &amp;#39;&amp;#39;, $audit);
+99: }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;portalAudit 函式過濾了幾乎所有參數，唯獨遺漏了 &lt;code&gt;$audit['patient_id']&lt;/code&gt;，而此參數恰好又是使用者能控制的參數，因此就能進行 SQL 的注入，而此處同樣也會顯示 SQL 錯誤訊息，因此也能利用 Error-Based 取得資料庫內容。&lt;/p&gt;
+&lt;div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code"&gt;
+&lt;div&gt;&lt;pre&gt;&lt;code&gt;File: /portal/lib/appsql.class.php
+135: public function portalAudit($type = &amp;#39;insert&amp;#39;, $rec = &amp;#39;&amp;#39;, array $auditvals, $oelog = true, $error = true)
+136: {
+162: try {
+163: if ($type != &amp;#39;update&amp;#39;) {
+164: $logsql = &amp;#34;INSERT INTO onsite_portal_activity&amp;#34;.
+165: &amp;#34;( date, patient_id, activity, require_audit, pending_action, action_taken, status, narrative,&amp;#34;.
+166: &amp;#34;table_action, table_args, action_user, action_taken_time, checksum) &amp;#34;.
+167: &amp;#34;VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)&amp;#34;;
+168: } else {
+169: $logsql = &amp;#34;update onsite_portal_activity set date=?, patient_id=?, activity=?, require_audit=?,&amp;#34;.
+170: &amp;#34; pending_action=?, action_taken=?,status=?, narrative=?, table_action=?, table_args=?,&amp;#34;.
+171: &amp;#34;action_user=?, action_taken_time=?, checksum=? &amp;#34;;
+172: $logsql .= &amp;#34;where id=&amp;#34;.$rec .&amp;#34; And patient_id=&amp;#34;.$audit[&amp;#39;patient_id&amp;#39;];
+173: }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0"&gt;
+&lt;button
+class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+title="複製程式碼"
+aria-label="複製程式碼"
+data-copied-label="已複製！"
+&gt;
+&lt;div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"&gt;&lt;/div&gt;
+&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;此弱點同樣仰賴變數 &lt;code&gt;$_SESSION['patient_portal_onsite_two']&lt;/code&gt; 必須存在才可以存取，而錯誤設置 &lt;code&gt;$_SESSION['patient_portal_onsite_two']&lt;/code&gt; 的問題也在同一個 commit 中獲得了修復，在修復後的版本中，未登入使用者是無法訪問這些檔案的。&lt;/p&gt;
+&lt;h2&gt;References&lt;span class="hx:absolute hx:-mt-20" id="references"&gt;&lt;/span&gt;
+&lt;a href="#references" class="subheading-anchor" aria-label="此章節的永久連結"&gt;&lt;/a&gt;&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/openemr/openemr/commit/3e22d11"target="_blank" rel="noopener"&gt;https://github.com/openemr/openemr/commit/3e22d11&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/openemr/openemr/commit/4963fe4"target="_blank" rel="noopener"&gt;https://github.com/openemr/openemr/commit/4963fe4&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.open-emr.org/wiki/index.php/Old_Outdated_OpenEMR_Patches#5.0.1_Patch_.281.2F19.2F19.29"target="_blank" rel="noopener"&gt;https://www.open-emr.org/wiki/index.php/Old_Outdated_OpenEMR_Patches#5.0.1_Patch_.281.2F19.2F19.29&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17179"target="_blank" rel="noopener"&gt;https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17179&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17180"target="_blank" rel="noopener"&gt;https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17180&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17181"target="_blank" rel="noopener"&gt;https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-17181&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>
